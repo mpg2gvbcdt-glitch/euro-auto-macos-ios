@@ -133,7 +133,7 @@
 		F20000000000000000000002 /* Release project */ = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; }; name = Release; };
 		F20000000000000000000003 /* Debug target */ = {isa = XCBuildConfiguration; buildSettings = {
 			CODE_SIGN_ENTITLEMENTS = EuroAuto/EuroAuto.entitlements;
-			CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = EuroAuto/EuroAuto-macOS.entitlements;
+			"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = EuroAuto/EuroAuto-macOS.entitlements;
 			CODE_SIGN_STYLE = Automatic;
 			CURRENT_PROJECT_VERSION = 1;
 			ENABLE_PREVIEWS = YES;
@@ -153,7 +153,7 @@
 		}; name = Debug; };
 		F20000000000000000000004 /* Release target */ = {isa = XCBuildConfiguration; buildSettings = {
 			CODE_SIGN_ENTITLEMENTS = EuroAuto/EuroAuto.entitlements;
-			CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = EuroAuto/EuroAuto-macOS.entitlements;
+			"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = EuroAuto/EuroAuto-macOS.entitlements;
 			CODE_SIGN_STYLE = Automatic;
 			CURRENT_PROJECT_VERSION = 1;
 			ENABLE_PREVIEWS = YES;
