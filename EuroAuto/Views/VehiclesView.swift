@@ -7,6 +7,9 @@ struct VehiclesView: View {
     @Query(sort: \Vehicle.updatedAt, order: .reverse) private var vehicles: [Vehicle]
     @State private var searchText = ""
     @State private var importFilter = "Все"
+    @State private var vehicleToDelete: Vehicle?
+    @State private var showingDeleteConfirmation = false
+    @State private var deleteError: String?
 
     private let filters = ["Все", "На склад", "Под заказ"]
     private var filtered: [Vehicle] {
@@ -50,14 +53,34 @@ struct VehiclesView: View {
             } else {
                 List {
                     ForEach(filtered) { vehicle in
-                        NavigationLink(destination: VehicleDetailView(vehicle: vehicle)) {
-                            VehicleRow(vehicle: vehicle)
-                                .padding(.vertical, 5)
+                        HStack(spacing: 8) {
+                            NavigationLink(destination: VehicleDetailView(vehicle: vehicle)) {
+                                VehicleRow(vehicle: vehicle)
+                                    .padding(.vertical, 5)
+                            }
+                            Menu {
+                                Button(role: .destructive) {
+                                    vehicleToDelete = vehicle
+                                    showingDeleteConfirmation = true
+                                } label: {
+                                    Label("Удалить автомобиль", systemImage: "trash")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 36, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .help("Действия с автомобилем")
                         }
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                         .swipeActions {
-                            Button(role: .destructive) { modelContext.delete(vehicle) } label: { Label("Удалить", systemImage: "trash") }
+                            Button(role: .destructive) {
+                                vehicleToDelete = vehicle
+                                showingDeleteConfirmation = true
+                            } label: { Label("Удалить", systemImage: "trash") }
                         }
                     }
                 }
@@ -67,6 +90,20 @@ struct VehiclesView: View {
         }
         .background(Color.euroCanvas)
         .navigationTitle("Автомобили")
+        .confirmationDialog("Удалить автомобиль?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Удалить", role: .destructive, action: deleteSelectedVehicle)
+            Button("Отмена", role: .cancel) { vehicleToDelete = nil }
+        } message: {
+            Text("Автомобиль и прикреплённые к нему документы будут удалены из реестра.")
+        }
+        .alert("Не удалось удалить автомобиль", isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("ОК") { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
+        }
         .sheet(isPresented: $showingNewVehicle) {
             #if os(macOS)
             VehicleEditorView(vehicle: Vehicle(), isNew: true)
@@ -75,6 +112,18 @@ struct VehiclesView: View {
             VehicleEditorView(vehicle: Vehicle(), isNew: true)
             #endif
         }
+    }
+
+    private func deleteSelectedVehicle() {
+        guard let vehicle = vehicleToDelete else { return }
+        modelContext.delete(vehicle)
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            deleteError = error.localizedDescription
+        }
+        vehicleToDelete = nil
     }
 }
 

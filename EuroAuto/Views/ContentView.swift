@@ -50,18 +50,22 @@ struct ContentView: View {
             .navigationSplitViewColumnWidth(min: 210, ideal: 240)
             #endif
         } detail: {
-            switch selection ?? .overview {
-            case .overview:
-                DashboardView(onAddVehicle: {
-                    selection = .vehicles
-                    showingNewVehicle = true
-                })
-            case .vehicles:
-                VehiclesView(showingNewVehicle: $showingNewVehicle)
-            case .customers:
-                CustomersView()
-            case .backup:
-                BackupView()
+            NavigationStack {
+                Group {
+                    switch selection ?? .overview {
+                    case .overview:
+                        DashboardView(onAddVehicle: {
+                            selection = .vehicles
+                            showingNewVehicle = true
+                        })
+                    case .vehicles:
+                        VehiclesView(showingNewVehicle: $showingNewVehicle)
+                    case .customers:
+                        CustomersView()
+                    case .backup:
+                        BackupView()
+                    }
+                }
             }
         }
         .background(Color.euroCanvas)
