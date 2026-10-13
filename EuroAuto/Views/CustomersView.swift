@@ -16,8 +16,9 @@ struct CustomersView: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Заказчики").font(.system(size: 30, weight: .bold, design: .rounded))
-                    Text("Контакты клиентов и привязанные автомобили").foregroundStyle(.secondary)
+                    Text("КЛИЕНТСКАЯ БАЗА").font(.system(size: 10, weight: .bold)).tracking(1.5).foregroundStyle(Color.euroGreen)
+                    Text("Заказчики").font(.system(size: 32, weight: .bold, design: .rounded))
+                    Text("Контакты клиентов и привязанные автомобили").font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button { showingNew = true } label: { Label("Добавить", systemImage: "plus").fontWeight(.semibold) }
@@ -41,6 +42,7 @@ struct CustomersView: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .searchable(text: $search, prompt: "Имя, телефон или email")
             }
         }
@@ -78,7 +80,8 @@ private struct CustomerRow: View {
                 Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
             }
             .padding(13)
-            .background(.background, in: RoundedRectangle(cornerRadius: 16))
+            .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.euroLine.opacity(0.75), lineWidth: 1))
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
