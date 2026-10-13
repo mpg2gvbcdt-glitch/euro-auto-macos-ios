@@ -17,10 +17,67 @@ struct CatalogModel: Decodable {
 }
 
 struct CatalogGeneration: Decodable {
+    let n: String
+    let from: Int?
+    let to: Int?
+    let body: String?
     let engines: [CatalogEngine]
 }
 
-struct CatalogEngine: Decodable {}
+struct CatalogEngine: Decodable {
+    let n: String
+    let f: String?
+    let cy: Int?
+    let cc: Int?
+    let hp: Int?
+    let dr: String?
+    let tr: String?
+    let l: Int?
+    let w: Int?
+    let h: Int?
+    let wb: Int?
+    let kg: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case n, f, cy, cc, hp, dr, tr, l, w, h, wb, kg
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        n = try values.decode(String.self, forKey: .n)
+        f = try values.decodeIfPresent(String.self, forKey: .f)
+        cy = try values.decodeCatalogInteger(forKey: .cy)
+        cc = try values.decodeCatalogInteger(forKey: .cc)
+        hp = try values.decodeCatalogInteger(forKey: .hp)
+        dr = try values.decodeIfPresent(String.self, forKey: .dr)
+        tr = try values.decodeIfPresent(String.self, forKey: .tr)
+        l = try values.decodeCatalogInteger(forKey: .l)
+        w = try values.decodeCatalogInteger(forKey: .w)
+        h = try values.decodeCatalogInteger(forKey: .h)
+        wb = try values.decodeCatalogInteger(forKey: .wb)
+        kg = try values.decodeCatalogInteger(forKey: .kg)
+    }
+}
+
+private extension KeyedDecodingContainer {
+    func decodeCatalogInteger(forKey key: Key) throws -> Int? {
+        guard contains(key) else { return nil }
+        if try decodeNil(forKey: key) { return nil }
+        if let integer = try? decode(Int.self, forKey: key) { return integer }
+
+        let number = try decode(Double.self, forKey: key)
+        guard number.isFinite,
+              number >= Double(Int.min),
+              number <= Double(Int.max) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: key,
+                in: self,
+                debugDescription: "Catalog value must be a finite number within the Int range."
+            )
+        }
+        return Int(number.rounded())
+    }
+}
 
 guard CommandLine.arguments.count == 2 else {
     fatalError("Usage: test_vehicle_catalog_decode.swift <vehicle-catalog.json>")
@@ -44,7 +101,12 @@ let decodedCount = compressed.withUnsafeBytes { source in
 }
 guard decodedCount == envelope.uncompressedBytes else { fatalError("Catalog decompression failed") }
 
-let makes = try JSONDecoder().decode([CatalogMake].self, from: decoded)
+let makes: [CatalogMake]
+do {
+    makes = try JSONDecoder().decode([CatalogMake].self, from: decoded)
+} catch {
+    fatalError("Full catalog model decode failed: \\(error)")
+}
 let modelCount = makes.reduce(0) { $0 + $1.models.count }
 let generationCount = makes.reduce(0) { count, make in count + make.models.reduce(0) { $0 + $1.generations.count } }
 let engineCount = makes.reduce(0) { count, make in
