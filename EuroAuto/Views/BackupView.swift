@@ -66,7 +66,7 @@ struct BackupView: View {
         .background(Color.euroCanvas)
         .groupBoxStyle(EuroAutoGroupBoxStyle())
         .navigationTitle("Перенос данных")
-        .fileExporter(isPresented: $exporting, document: BackupFile(data: exportData), contentType: .json, defaultFilename: "NordAuto-backup") { result in
+        .fileExporter(isPresented: $exporting, document: BackupFile(data: exportData), contentType: .json, defaultFilename: "11-35-backup") { result in
             if case .failure(let error) = result { alert = BackupAlert(title: "Не удалось сохранить копию", message: error.localizedDescription) }
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in

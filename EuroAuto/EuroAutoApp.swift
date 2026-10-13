@@ -11,7 +11,7 @@ struct EuroAutoApp: App {
         do {
             container = try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            fatalError("Не удалось открыть локальную базу Euro Auto: \(error)")
+            fatalError("Не удалось открыть локальную базу 11/35: \(error)")
         }
     }
 
