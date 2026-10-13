@@ -111,16 +111,7 @@ struct VehicleDetailView: View {
                     .padding(.top, 8)
                 }
 
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Калькулятор ТКС", systemImage: "function")
-                            .font(.headline)
-                        Text("Подключим внешний расчёт после получения API-ключа. Ручные расходы и себестоимость уже считаются на устройстве без интернета.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                GroupBox { CalcusCustomsCalculatorView(vehicle: vehicle) }
 
                 if !vehicle.notes.isEmpty {
                     GroupBox("Заметки") { Text(vehicle.notes).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6) }
