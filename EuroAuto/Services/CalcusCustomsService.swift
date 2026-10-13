@@ -46,20 +46,49 @@ enum CalcusCustomsService {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else { throw CalcusError.invalidResponse }
         guard (200..<300).contains(httpResponse.statusCode) else {
-            throw CalcusError.serverRejected(httpResponse.statusCode)
+            throw CalcusError.serverRejected(httpResponse.statusCode, responseMessage(from: data))
         }
-        let result = try JSONDecoder().decode(CalcusCustomsResult.self, from: data)
+        let result: CalcusCustomsResult
+        do {
+            result = try JSONDecoder().decode(CalcusCustomsResult.self, from: data)
+        } catch {
+            throw CalcusError.unreadableResponse(responseMessage(from: data))
+        }
         guard [result.sbor, result.tax, result.util, result.nds, result.excise, result.total, result.total2].allSatisfy({ $0.isFinite && $0 >= 0 }) else {
             throw CalcusError.invalidResponse
         }
         return result
     }
 
+    private static func responseMessage(from data: Data) -> String? {
+        guard let object = try? JSONSerialization.jsonObject(with: data) else {
+            let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.flatMap { $0.isEmpty ? nil : String($0.prefix(800)) }
+        }
+
+        if let dictionary = object as? [String: Any] {
+            if let errors = dictionary["errors"] as? [String: Any] {
+                let details = errors.keys.sorted().compactMap { key -> String? in
+                    guard let value = errors[key] else { return nil }
+                    return "\(key): \(String(describing: value))"
+                }
+                if !details.isEmpty { return details.joined(separator: "\n") }
+            }
+            if let message = dictionary["message"] as? String, !message.isEmpty { return message }
+            if let error = dictionary["error"] as? String, !error.isEmpty { return error }
+        }
+
+        guard let data = try? JSONSerialization.data(withJSONObject: object),
+              let text = String(data: data, encoding: .utf8) else { return nil }
+        return String(text.prefix(800))
+    }
+
     enum CalcusError: LocalizedError {
         case credentialsMissing
         case invalidURL
         case invalidResponse
-        case serverRejected(Int)
+        case unreadableResponse(String?)
+        case serverRejected(Int, String?)
 
         var errorDescription: String? {
             switch self {
@@ -69,12 +98,19 @@ enum CalcusCustomsService {
                 "Не удалось подготовить запрос Calcus."
             case .invalidResponse:
                 "Calcus вернул ответ, который приложение не смогло прочитать."
-            case .serverRejected(let status):
+            case .unreadableResponse(let details):
+                if let details, !details.isEmpty {
+                    "Calcus вернул ответ в неожиданном формате: \(details)"
+                } else {
+                    "Calcus вернул ответ в неожиданном формате. Проверьте версию приложения и повторите расчёт."
+                }
+            case .serverRejected(let status, let details):
+                let reason = details.flatMap { $0.isEmpty ? nil : "\n\($0)" } ?? ""
                 switch status {
-                case 400: "Calcus не принял параметры расчёта. Проверьте характеристики автомобиля и валюту."
-                case 401, 403: "Calcus отклонил доступ. Проверьте ID клиента и API-ключ в настройках."
-                case 429: "Calcus временно ограничил число запросов. Попробуйте позже."
-                default: "Сервис Calcus временно недоступен (ошибка \(status))."
+                case 400: "Calcus не принял параметры расчёта. Проверьте характеристики автомобиля и валюту.\(reason)"
+                case 401, 403: "Calcus отклонил доступ. Проверьте ID клиента и API-ключ в настройках.\(reason)"
+                case 429: "Calcus временно ограничил число запросов. Попробуйте позже.\(reason)"
+                default: "Сервис Calcus временно недоступен (ошибка \(status)).\(reason)"
                 }
             }
         }
