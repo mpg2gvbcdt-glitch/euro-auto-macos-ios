@@ -6,6 +6,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     case currency = "Конвертер валют"
     case customers = "Заказчики"
     case backup = "Перенос данных"
+    case sync = "Синхронизация"
     case calcus = "Настройки Calcus"
 
     var id: String { rawValue }
@@ -17,6 +18,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .currency: "dollarsign.arrow.circlepath"
         case .customers: "person.2.fill"
         case .backup: "externaldrive.fill"
+        case .sync: "arrow.triangle.2.circlepath.icloud"
         case .calcus: "function"
         }
     }
@@ -56,6 +58,7 @@ struct ContentView: View {
                     .padding(.top, 14)
 
                 SidebarButton(section: .backup, selection: $selection)
+                SidebarButton(section: .sync, selection: $selection)
                 SidebarButton(section: .calcus, selection: $selection)
                 Spacer(minLength: 0)
             }
@@ -81,6 +84,8 @@ struct ContentView: View {
                         CustomersView()
                     case .backup:
                         BackupView()
+                    case .sync:
+                        WebsiteSyncView()
                     case .calcus:
                         CalcusSettingsView()
                     }

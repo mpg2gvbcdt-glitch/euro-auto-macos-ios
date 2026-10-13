@@ -149,6 +149,7 @@ private struct CustomerEditorView: View {
             return
         }
         if isNew { modelContext.insert(customer) }
+        customer.updatedAt = .now
         do { try modelContext.save(); dismiss() }
         catch { errorMessage = "Не удалось сохранить заказчика: \(error.localizedDescription)" }
     }

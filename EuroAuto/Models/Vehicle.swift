@@ -11,6 +11,7 @@ final class Customer {
     var city: String
     var notes: String
     var createdAt: Date
+    var updatedAt: Date?
     @Relationship(deleteRule: .nullify, inverse: \Vehicle.customer)
     var vehicles: [Vehicle]? = []
 
@@ -23,6 +24,7 @@ final class Customer {
         self.city = city
         self.notes = notes
         self.createdAt = .now
+        self.updatedAt = .now
     }
 }
 
@@ -161,6 +163,7 @@ final class VehicleDocument {
     var contentType: String
     @Attribute(.externalStorage) var fileData: Data
     var createdAt: Date
+    var remoteID: Int?
     var vehicle: Vehicle?
 
     init(filename: String, contentType: String, fileData: Data) {
@@ -169,5 +172,6 @@ final class VehicleDocument {
         self.contentType = contentType
         self.fileData = fileData
         self.createdAt = .now
+        self.remoteID = nil
     }
 }
