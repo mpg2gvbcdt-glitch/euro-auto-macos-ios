@@ -5,14 +5,21 @@ import CryptoKit
 
 struct WebsiteSyncReport {
     var uploadedVehicles = 0
+    var updatedVehicles = 0
     var downloadedVehicles = 0
+    var deletedVehicles = 0
     var uploadedCustomers = 0
+    var updatedCustomers = 0
     var downloadedCustomers = 0
+    var deletedCustomers = 0
     var uploadedDocuments = 0
     var downloadedDocuments = 0
+    var deletedDocuments = 0
+    var skippedVehiclesWithoutVIN = 0
 
     var summary: String {
-        "Автомобили: +\(uploadedVehicles) отправлено, +\(downloadedVehicles) получено. Заказчики: +\(uploadedCustomers) отправлено, +\(downloadedCustomers) получено. Документы: +\(uploadedDocuments) отправлено, +\(downloadedDocuments) получено."
+        "Автомобили: \(uploadedVehicles) новых отправлено, \(updatedVehicles) обновлено, \(downloadedVehicles) получено, \(deletedVehicles) удалено. Заказчики: \(uploadedCustomers) новых отправлено, \(updatedCustomers) обновлено, \(downloadedCustomers) получено, \(deletedCustomers) удалено. Документы: \(uploadedDocuments) отправлено, \(downloadedDocuments) получено, \(deletedDocuments) удалено."
+            + (skippedVehiclesWithoutVIN > 0 ? " Пропущено машин без VIN: \(skippedVehiclesWithoutVIN)." : "")
     }
 }
 
@@ -43,6 +50,7 @@ private struct DocumentsReply: Decodable { var documents: [RemoteDocument] }
 private struct CustomerReply: Decodable { var customer: RemoteCustomer }
 private struct CarReply: Decodable { var vehicle: RemoteVehicle }
 private struct DocumentReply: Decodable { var document: RemoteDocument }
+private struct OperationReply: Decodable { var ok: Bool? }
 
 private struct RemoteCustomer: Decodable {
     var id: Int
@@ -106,6 +114,68 @@ private struct RemoteVehicle: Decodable {
     var nativeMetadata: NativeVehicleMetadata?
     var createdAt: String?
     var updatedAt: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, vin, make, model, year, originCountry, purchaseDate, supplierInvoice, currency, purchasePrice, fxRate
+        case deliveryCost, freightCost, customsDuty, customsFees, recyclingFee, certificationCost, registrationCost, otherCosts
+        case importType, customerId, orderDate, clientContract, salePrice, prepayment, orderStatus, actualSalePrice
+        case vehicleStatus, location, documentsStatus, notes, engineVolumeCc, enginePowerHp, engineType, engineCylinders
+        case bodyType, driveType, transmission, vehicleLengthMm, vehicleWidthMm, vehicleHeightMm, wheelbaseMm, curbWeightKg
+        case specSource, importerType, importRoute, nativeMetadata, createdAt, updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(Int.self, forKey: .id) ?? 0
+        vin = try c.decodeIfPresent(String.self, forKey: .vin) ?? ""
+        make = try c.decodeIfPresent(String.self, forKey: .make) ?? ""
+        model = try c.decodeIfPresent(String.self, forKey: .model) ?? ""
+        year = try c.decodeIfPresent(Int.self, forKey: .year)
+        originCountry = try c.decodeIfPresent(String.self, forKey: .originCountry) ?? ""
+        purchaseDate = try c.decodeIfPresent(String.self, forKey: .purchaseDate) ?? ""
+        supplierInvoice = try c.decodeIfPresent(String.self, forKey: .supplierInvoice) ?? ""
+        currency = try c.decodeIfPresent(String.self, forKey: .currency) ?? "EUR"
+        purchasePrice = try c.decodeIfPresent(Double.self, forKey: .purchasePrice) ?? 0
+        fxRate = try c.decodeIfPresent(Double.self, forKey: .fxRate) ?? 1
+        deliveryCost = try c.decodeIfPresent(Double.self, forKey: .deliveryCost) ?? 0
+        freightCost = try c.decodeIfPresent(Double.self, forKey: .freightCost) ?? 0
+        customsDuty = try c.decodeIfPresent(Double.self, forKey: .customsDuty) ?? 0
+        customsFees = try c.decodeIfPresent(Double.self, forKey: .customsFees) ?? 0
+        recyclingFee = try c.decodeIfPresent(Double.self, forKey: .recyclingFee) ?? 0
+        certificationCost = try c.decodeIfPresent(Double.self, forKey: .certificationCost) ?? 0
+        registrationCost = try c.decodeIfPresent(Double.self, forKey: .registrationCost) ?? 0
+        otherCosts = try c.decodeIfPresent(Double.self, forKey: .otherCosts) ?? 0
+        importType = try c.decodeIfPresent(String.self, forKey: .importType) ?? "На склад"
+        customerId = try c.decodeIfPresent(Int.self, forKey: .customerId)
+        orderDate = try c.decodeIfPresent(String.self, forKey: .orderDate) ?? ""
+        clientContract = try c.decodeIfPresent(String.self, forKey: .clientContract) ?? ""
+        salePrice = try c.decodeIfPresent(Double.self, forKey: .salePrice) ?? 0
+        prepayment = try c.decodeIfPresent(Double.self, forKey: .prepayment) ?? 0
+        orderStatus = try c.decodeIfPresent(String.self, forKey: .orderStatus) ?? "Новая заявка"
+        actualSalePrice = try c.decodeIfPresent(Double.self, forKey: .actualSalePrice) ?? 0
+        vehicleStatus = try c.decodeIfPresent(String.self, forKey: .vehicleStatus) ?? "В пути"
+        location = try c.decodeIfPresent(String.self, forKey: .location) ?? ""
+        documentsStatus = try c.decodeIfPresent(String.self, forKey: .documentsStatus) ?? "Не проверены"
+        notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        engineVolumeCc = try c.decodeIfPresent(Int.self, forKey: .engineVolumeCc)
+        enginePowerHp = try c.decodeIfPresent(Int.self, forKey: .enginePowerHp)
+        engineType = try c.decodeIfPresent(String.self, forKey: .engineType) ?? "Бензин"
+        engineCylinders = try c.decodeIfPresent(Int.self, forKey: .engineCylinders)
+        bodyType = try c.decodeIfPresent(String.self, forKey: .bodyType) ?? ""
+        driveType = try c.decodeIfPresent(String.self, forKey: .driveType) ?? ""
+        transmission = try c.decodeIfPresent(String.self, forKey: .transmission) ?? ""
+        vehicleLengthMm = try c.decodeIfPresent(Int.self, forKey: .vehicleLengthMm)
+        vehicleWidthMm = try c.decodeIfPresent(Int.self, forKey: .vehicleWidthMm)
+        vehicleHeightMm = try c.decodeIfPresent(Int.self, forKey: .vehicleHeightMm)
+        wheelbaseMm = try c.decodeIfPresent(Int.self, forKey: .wheelbaseMm)
+        curbWeightKg = try c.decodeIfPresent(Int.self, forKey: .curbWeightKg)
+        specSource = try c.decodeIfPresent(String.self, forKey: .specSource) ?? ""
+        importerType = try c.decodeIfPresent(String.self, forKey: .importerType) ?? "Юрлицо / ИП"
+        importRoute = try c.decodeIfPresent(String.self, forKey: .importRoute) ?? "Напрямую в Россию"
+        nativeMetadata = try? c.decodeIfPresent(NativeVehicleMetadata.self, forKey: .nativeMetadata)
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt)
+    }
 }
 
 private struct RemoteDocument: Decodable {
@@ -160,6 +230,19 @@ enum WebsiteSyncService {
 
     static func forgetPassword() throws { try WebsiteSyncKeyStore.delete() }
 
+    static func markVehicleDeleted(vin: String) {
+        SyncTombstones.add(vin: vin)
+    }
+
+    static func markCustomerDeleted(code: String) {
+        SyncTombstones.add(customerCode: code)
+    }
+
+    static func markDocumentDeleted(remoteID: Int?) {
+        guard let remoteID else { return }
+        SyncTombstones.add(documentID: remoteID)
+    }
+
     static func synchronize(server: String, password: String, context: ModelContext) async throws -> WebsiteSyncReport {
         let base = try normalizedServer(server)
         UserDefaults.standard.set(base.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/")), forKey: serverKey)
@@ -170,6 +253,8 @@ enum WebsiteSyncService {
 
         var report = WebsiteSyncReport()
         var remoteCustomers = try await request(CustomersReply.self, base: base, path: "/api/customers")
+        var remoteCars = try await request(CarsReply.self, base: base, path: "/api/cars")
+        try await applyPendingDeletions(base: base, remoteCustomers: &remoteCustomers, remoteCars: &remoteCars, report: &report)
         var localCustomers = try context.fetch(FetchDescriptor<Customer>())
         var localCustomersByCode = Dictionary(localCustomers.map { ($0.code.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
         var remoteCustomersByCode = Dictionary(remoteCustomers.customers.map { ($0.code.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
@@ -184,6 +269,7 @@ enum WebsiteSyncService {
                     payload.expectedUpdatedAt = remote.updatedAt
                     let updated = try await request(CustomerReply.self, base: base, path: "/api/customers?id=\(remote.id)", method: "PATCH", body: JSONEncoder().encode(payload))
                     local.updatedAt = parseDate(updated.customer.updatedAt) ?? .now
+                    report.updatedCustomers += 1
                 } else {
                     apply(remote, to: local)
                 }
@@ -206,11 +292,12 @@ enum WebsiteSyncService {
             report.downloadedCustomers += 1
         }
 
-        var remoteCars = try await request(CarsReply.self, base: base, path: "/api/cars")
+        remoteCars = try await request(CarsReply.self, base: base, path: "/api/cars")
         var localCars = try context.fetch(FetchDescriptor<Vehicle>())
         var localCarsByVIN = Dictionary(localCars.filter { !$0.vin.isEmpty }.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
         var remoteCarsByVIN = Dictionary(remoteCars.cars.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
 
+        report.skippedVehiclesWithoutVIN = localCars.filter { $0.vin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
         for local in localCars where !local.vin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let key = local.vin.uppercased()
             let customerID = local.customer.flatMap { remoteCustomersByCode[$0.code.uppercased()]?.id }
@@ -219,6 +306,7 @@ enum WebsiteSyncService {
                     let payload = vehiclePayload(local, customerID: customerID, expectedUpdatedAt: remote.updatedAt)
                     let updated = try await request(CarReply.self, base: base, path: "/api/cars?id=\(remote.id)", method: "PATCH", body: JSONEncoder().encode(payload))
                     local.updatedAt = parseDate(updated.vehicle.updatedAt) ?? .now
+                    report.updatedVehicles += 1
                 } else {
                     apply(remote, to: local, customersByID: Dictionary(uniqueKeysWithValues: remoteCustomers.customers.map { ($0.id, $0) }), localCustomers: localCustomersByCode)
                 }
@@ -247,6 +335,43 @@ enum WebsiteSyncService {
         do { try context.save() }
         catch { context.rollback(); throw error }
         return report
+    }
+
+    private static func applyPendingDeletions(base: URL, remoteCustomers: inout CustomersReply, remoteCars: inout CarsReply, report: inout WebsiteSyncReport) async throws {
+        for id in SyncTombstones.documentIDs {
+            _ = try await request(OperationReply.self, base: base, path: "/api/car-documents?id=\(id)", method: "DELETE")
+            SyncTombstones.remove(documentID: id)
+            report.deletedDocuments += 1
+        }
+
+        for vin in SyncTombstones.vehicleVINs {
+            guard let index = remoteCars.cars.firstIndex(where: { $0.vin.uppercased() == vin }) else {
+                SyncTombstones.remove(vin: vin)
+                continue
+            }
+            let remote = remoteCars.cars[index]
+            _ = try await request(OperationReply.self, base: base, path: "/api/cars?id=\(remote.id)", method: "DELETE")
+            remoteCars.cars.remove(at: index)
+            SyncTombstones.remove(vin: vin)
+            report.deletedVehicles += 1
+        }
+
+        for code in SyncTombstones.customerCodes {
+            guard let index = remoteCustomers.customers.firstIndex(where: { $0.code.uppercased() == code }) else {
+                SyncTombstones.remove(customerCode: code)
+                continue
+            }
+            let remote = remoteCustomers.customers[index]
+            for car in remoteCars.cars where car.customerId == remote.id {
+                let payload = vehiclePayload(from: car, customerID: nil, expectedUpdatedAt: car.updatedAt)
+                _ = try await request(CarReply.self, base: base, path: "/api/cars?id=\(car.id)", method: "PATCH", body: JSONEncoder().encode(payload))
+                report.updatedVehicles += 1
+            }
+            _ = try await request(OperationReply.self, base: base, path: "/api/customers?id=\(remote.id)", method: "DELETE")
+            remoteCustomers.customers.remove(at: index)
+            SyncTombstones.remove(customerCode: code)
+            report.deletedCustomers += 1
+        }
     }
 
     private static func ensureSession(base: URL, password: String, forceLogin: Bool) async throws {
@@ -323,6 +448,26 @@ enum WebsiteSyncService {
                        nativeMetadata: NativeVehicleMetadata(generation: car.generation, engine: car.engine,
                                                              deliveryCurrency: car.deliveryCurrency, deliveryFxRate: car.deliveryFxRate,
                                                              freightCurrency: car.freightCurrency, freightFxRate: car.freightFxRate),
+                       expectedUpdatedAt: expectedUpdatedAt)
+    }
+
+    private static func vehiclePayload(from car: RemoteVehicle, customerID: Int?, expectedUpdatedAt: String?) -> VehiclePayload {
+        VehiclePayload(vin: car.vin, make: car.make, model: car.model, year: car.year,
+                       originCountry: car.originCountry, purchaseDate: car.purchaseDate, supplierInvoice: car.supplierInvoice,
+                       currency: car.currency, purchasePrice: car.purchasePrice, fxRate: car.fxRate,
+                       deliveryCost: car.deliveryCost, freightCost: car.freightCost, customsDuty: car.customsDuty,
+                       customsFees: car.customsFees, recyclingFee: car.recyclingFee, certificationCost: car.certificationCost,
+                       registrationCost: car.registrationCost, otherCosts: car.otherCosts, importType: car.importType,
+                       customerId: customerID, orderDate: car.orderDate, clientContract: car.clientContract,
+                       salePrice: car.salePrice, prepayment: car.prepayment, orderStatus: car.orderStatus,
+                       actualSalePrice: car.actualSalePrice, vehicleStatus: car.vehicleStatus, location: car.location,
+                       documentsStatus: car.documentsStatus, notes: car.notes, engineVolumeCc: car.engineVolumeCc,
+                       enginePowerHp: car.enginePowerHp, engineType: car.engineType, engineCylinders: car.engineCylinders,
+                       bodyType: car.bodyType, driveType: car.driveType, transmission: car.transmission,
+                       vehicleLengthMm: car.vehicleLengthMm, vehicleWidthMm: car.vehicleWidthMm, vehicleHeightMm: car.vehicleHeightMm,
+                       wheelbaseMm: car.wheelbaseMm, curbWeightKg: car.curbWeightKg, specSource: car.specSource,
+                       importerType: car.importerType, importRoute: car.importRoute,
+                       nativeMetadata: car.nativeMetadata ?? NativeVehicleMetadata(generation: "", engine: ""),
                        expectedUpdatedAt: expectedUpdatedAt)
     }
 
@@ -478,5 +623,61 @@ private enum WebsiteSyncKeyStore {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: account]
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else { throw WebsiteSyncError.server("Не удалось удалить сохранённый пароль.") }
+    }
+}
+
+private enum SyncTombstones {
+    private static let vehiclesKey = "11-35.sync.deletedVehicles"
+    private static let customersKey = "11-35.sync.deletedCustomers"
+    private static let documentsKey = "11-35.sync.deletedDocuments"
+
+    static var vehicleVINs: [String] { values(for: vehiclesKey) }
+    static var customerCodes: [String] { values(for: customersKey) }
+    static var documentIDs: [Int] { UserDefaults.standard.array(forKey: documentsKey) as? [Int] ?? [] }
+
+    static func add(vin: String) {
+        add(vin, for: vehiclesKey)
+    }
+
+    static func add(customerCode: String) {
+        add(customerCode, for: customersKey)
+    }
+
+    static func remove(vin: String) {
+        remove(vin, for: vehiclesKey)
+    }
+
+    static func remove(customerCode: String) {
+        remove(customerCode, for: customersKey)
+    }
+
+    static func add(documentID: Int) {
+        var current = Set(documentIDs)
+        current.insert(documentID)
+        UserDefaults.standard.set(current.sorted(), forKey: documentsKey)
+    }
+
+    static func remove(documentID: Int) {
+        var current = Set(documentIDs)
+        current.remove(documentID)
+        UserDefaults.standard.set(current.sorted(), forKey: documentsKey)
+    }
+
+    private static func values(for key: String) -> [String] {
+        UserDefaults.standard.stringArray(forKey: key) ?? []
+    }
+
+    private static func add(_ value: String, for key: String) {
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !normalized.isEmpty else { return }
+        var current = Set(values(for: key))
+        current.insert(normalized)
+        UserDefaults.standard.set(current.sorted(), forKey: key)
+    }
+
+    private static func remove(_ value: String, for key: String) {
+        var current = Set(values(for: key))
+        current.remove(value.uppercased())
+        UserDefaults.standard.set(current.sorted(), forKey: key)
     }
 }

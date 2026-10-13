@@ -6,6 +6,7 @@ struct CustomersView: View {
     @Query(sort: \Customer.createdAt, order: .reverse) private var customers: [Customer]
     @State private var search = ""
     @State private var showingNew = false
+    @State private var deleteError: String?
 
     private var filtered: [Customer] {
         guard !search.isEmpty else { return customers }
@@ -37,7 +38,7 @@ struct CustomersView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .swipeActions {
-                                Button(role: .destructive) { modelContext.delete(customer) } label: { Label("Удалить", systemImage: "trash") }
+                                Button(role: .destructive) { delete(customer) } label: { Label("Удалить", systemImage: "trash") }
                             }
                     }
                 }
@@ -54,6 +55,30 @@ struct CustomersView: View {
             #else
             CustomerEditorView(customer: Customer(name: ""), isNew: true)
             #endif
+        }
+        .alert("Не удалось удалить заказчика", isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("OK", role: .cancel) { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
+        }
+    }
+
+    private func delete(_ customer: Customer) {
+        let deletedCode = customer.code
+        for vehicle in customer.vehicles ?? [] {
+            vehicle.customer = nil
+            vehicle.updatedAt = .now
+        }
+        modelContext.delete(customer)
+        do {
+            try modelContext.save()
+            WebsiteSyncService.markCustomerDeleted(code: deletedCode)
+        } catch {
+            modelContext.rollback()
+            deleteError = error.localizedDescription
         }
     }
 }

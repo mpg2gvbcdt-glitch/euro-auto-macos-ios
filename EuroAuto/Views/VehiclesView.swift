@@ -126,9 +126,11 @@ struct VehiclesView: View {
 
     private func deleteSelectedVehicle() {
         guard let vehicle = vehicleToDelete else { return }
+        let deletedVIN = vehicle.vin
         modelContext.delete(vehicle)
         do {
             try modelContext.save()
+            WebsiteSyncService.markVehicleDeleted(vin: deletedVIN)
         } catch {
             modelContext.rollback()
             deleteError = error.localizedDescription

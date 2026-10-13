@@ -201,15 +201,25 @@ struct VehicleDetailView: View {
 
     private func remove(_ document: VehicleDocument) {
         VehicleDocumentStore.delete(document)
+        let remoteID = document.remoteID
         vehicle.documents = (vehicle.documents ?? []).filter { $0.id != document.id }
         modelContext.delete(document)
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+            WebsiteSyncService.markDocumentDeleted(remoteID: remoteID)
+        } catch {
+            modelContext.rollback()
+            messageTitle = "Не удалось удалить документ"
+            message = error.localizedDescription
+        }
     }
 
     private func deleteVehicle() {
+        let deletedVIN = vehicle.vin
         modelContext.delete(vehicle)
         do {
             try modelContext.save()
+            WebsiteSyncService.markVehicleDeleted(vin: deletedVIN)
             dismiss()
         } catch {
             modelContext.rollback()
