@@ -65,7 +65,15 @@ struct VehicleEditorView: View {
                 }
 
                 Section("Характеристики из каталога") {
-                    LabeledContent("Год", value: vehicle.year.map(String.init) ?? "—")
+                    if let generation = selectedGeneration, let firstYear = generation.from {
+                        Picker("Год выпуска", selection: yearSelection(default: firstYear)) {
+                            ForEach(availableYears(for: generation), id: \.self) { year in
+                                Text(String(year)).tag(year)
+                            }
+                        }
+                    } else {
+                        LabeledContent("Год выпуска", value: vehicle.year.map(String.init) ?? "—")
+                    }
                     LabeledContent("Двигатель", value: vehicle.engineVolumeCc.map { "\($0) см³" } ?? "—")
                     LabeledContent("Мощность", value: vehicle.enginePowerHp.map { "\($0) л.с." } ?? "—")
                     LabeledContent("Цилиндры", value: vehicle.engineCylinders.map(String.init) ?? "—")
@@ -162,6 +170,28 @@ struct VehicleEditorView: View {
         Binding(get: { vehicle.orderDate ?? .now }, set: { vehicle.orderDate = $0 })
     }
 
+    private var selectedGeneration: CatalogGeneration? {
+        catalog.generations(for: vehicle.make, model: vehicle.model).first { $0.n == vehicle.generation }
+    }
+
+    private func availableYears(for generation: CatalogGeneration) -> [Int] {
+        guard let start = generation.from else { return [] }
+        let end = max(start, generation.to ?? Calendar.current.component(.year, from: .now))
+        return Array(start...end)
+    }
+
+    private func yearSelection(default firstYear: Int) -> Binding<Int> {
+        Binding(
+            get: { vehicle.year ?? firstYear },
+            set: { year in
+                guard vehicle.year != year else { return }
+                vehicle.year = year
+                vehicle.engine = ""
+                clearEngineSpecs()
+            }
+        )
+    }
+
     private var dimensions: String {
         let values = [vehicle.vehicleLengthMm, vehicle.vehicleWidthMm, vehicle.vehicleHeightMm]
         guard values.contains(where: { $0 != nil }) else { return "—" }
@@ -189,8 +219,13 @@ struct VehicleEditorView: View {
         case .make: catalog.makes.map(\.make)
         case .model: catalog.models(for: vehicle.make).map(\.n)
         case .generation: catalog.generations(for: vehicle.make, model: vehicle.model).map(\.n)
-        case .engine: catalog.engines(for: vehicle.make, model: vehicle.model, generation: vehicle.generation).map(\.n)
+        case .engine: enginesForSelectedYear().map(\.n)
         }
+    }
+
+    private func enginesForSelectedYear() -> [CatalogEngine] {
+        catalog.engines(for: vehicle.make, model: vehicle.model, generation: vehicle.generation)
+            .filter { $0.isAvailable(in: vehicle.year) }
     }
 
     private func apply(_ choice: String, to field: CatalogField) {
@@ -216,7 +251,7 @@ struct VehicleEditorView: View {
             }
         case .engine:
             vehicle.engine = choice
-            if let engine = catalog.engines(for: vehicle.make, model: vehicle.model, generation: vehicle.generation).first(where: { $0.n == choice }) {
+            if let engine = enginesForSelectedYear().first(where: { $0.n == choice }) {
                 vehicle.engineVolumeCc = engine.cc
                 vehicle.enginePowerHp = engine.hp
                 vehicle.engineType = engine.localizedFuel
@@ -232,6 +267,10 @@ struct VehicleEditorView: View {
     }
 
     private func clearSpecs() {
+        clearEngineSpecs()
+    }
+
+    private func clearEngineSpecs() {
         vehicle.engineVolumeCc = nil
         vehicle.enginePowerHp = nil
         vehicle.engineType = ""

@@ -13,6 +13,7 @@ struct CatalogMake: Decodable {
 }
 
 struct CatalogModel: Decodable {
+    let n: String
     let generations: [CatalogGeneration]
 }
 
@@ -37,9 +38,11 @@ struct CatalogEngine: Decodable {
     let h: Int?
     let wb: Int?
     let kg: Int?
+    let yf: Int?
+    let yt: Int?
 
     private enum CodingKeys: String, CodingKey {
-        case n, f, cy, cc, hp, dr, tr, l, w, h, wb, kg
+        case n, f, cy, cc, hp, dr, tr, l, w, h, wb, kg, yf, yt
     }
 
     init(from decoder: Decoder) throws {
@@ -56,6 +59,8 @@ struct CatalogEngine: Decodable {
         h = try values.decodeCatalogInteger(forKey: .h)
         wb = try values.decodeCatalogInteger(forKey: .wb)
         kg = try values.decodeCatalogInteger(forKey: .kg)
+        yf = try values.decodeCatalogInteger(forKey: .yf)
+        yt = try values.decodeCatalogInteger(forKey: .yt)
     }
 }
 
@@ -105,14 +110,21 @@ let makes: [CatalogMake]
 do {
     makes = try JSONDecoder().decode([CatalogMake].self, from: decoded)
 } catch {
-    fatalError("Full catalog model decode failed: \\(error)")
+    fatalError("Full catalog model decode failed: \(error)")
 }
 let modelCount = makes.reduce(0) { $0 + $1.models.count }
 let generationCount = makes.reduce(0) { count, make in count + make.models.reduce(0) { $0 + $1.generations.count } }
 let engineCount = makes.reduce(0) { count, make in
     count + make.models.reduce(0) { modelTotal, model in modelTotal + model.generations.reduce(0) { $0 + $1.engines.count } }
 }
-guard makes.count == 32, modelCount == 1389, generationCount == 4791, engineCount == 23572 else {
+guard makes.count == 32, modelCount == 1389, generationCount == 3841, engineCount == 23432 else {
     fatalError("Unexpected catalog counts: \(makes.count) makes, \(modelCount) models, \(generationCount) generations, \(engineCount) engines")
 }
-print("Apple Compression catalog decode OK: \(makes.count) makes, \(modelCount) models")
+let bmw = makes.first { $0.make == "BMW" }
+let series3 = bmw?.models.first { $0.n == "3 Series" }
+let touringLabels = Set(series3?.generations.map(\.n).filter { $0.contains("Touring") } ?? [])
+guard touringLabels.contains("3 Series Touring · G21 (2019–2026)"),
+      touringLabels.contains("3 Series Touring · F31 (2012–2019)") else {
+    fatalError("BMW 3 Series Touring body codes or production ranges are missing")
+}
+print("Apple Compression and full catalog decode OK: \(makes.count) makes, \(modelCount) models, \(generationCount) generation groups, \(engineCount) distinct engines; BMW Touring mappings verified")

@@ -36,10 +36,12 @@ struct CatalogEngine: Decodable, Identifiable {
     let h: Int?
     let wb: Int?
     let kg: Int?
-    var id: String { n }
+    let yf: Int?
+    let yt: Int?
+    var id: String { "\(n)|\(yf ?? 0)|\(yt ?? 0)|\(cc ?? 0)|\(hp ?? 0)" }
 
     private enum CodingKeys: String, CodingKey {
-        case n, f, cy, cc, hp, dr, tr, l, w, h, wb, kg
+        case n, f, cy, cc, hp, dr, tr, l, w, h, wb, kg, yf, yt
     }
 
     init(from decoder: Decoder) throws {
@@ -56,6 +58,15 @@ struct CatalogEngine: Decodable, Identifiable {
         h = try values.decodeCatalogInteger(forKey: .h)
         wb = try values.decodeCatalogInteger(forKey: .wb)
         kg = try values.decodeCatalogInteger(forKey: .kg)
+        yf = try values.decodeCatalogInteger(forKey: .yf)
+        yt = try values.decodeCatalogInteger(forKey: .yt)
+    }
+
+    func isAvailable(in year: Int?) -> Bool {
+        guard let year else { return true }
+        if let yf, year < yf { return false }
+        if let yt, year > yt { return false }
+        return true
     }
 
     var localizedFuel: String {
