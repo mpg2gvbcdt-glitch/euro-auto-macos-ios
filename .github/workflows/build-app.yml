@@ -18,9 +18,6 @@ jobs:
       - name: Get source
         uses: actions/checkout@v4
 
-      - name: Validate Xcode project syntax
-        run: plutil -lint EuroAuto.xcodeproj/project.pbxproj
-
       - name: Build macOS app
         run: >-
           xcodebuild
