@@ -93,24 +93,24 @@ enum CalcusCustomsService {
         var errorDescription: String? {
             switch self {
             case .credentialsMissing:
-                "Сначала сохраните ID клиента и API-ключ в разделе «Настройки Calcus» на этом устройстве."
+                return "Сначала сохраните ID клиента и API-ключ в разделе «Настройки Calcus» на этом устройстве."
             case .invalidURL:
-                "Не удалось подготовить запрос Calcus."
+                return "Не удалось подготовить запрос Calcus."
             case .invalidResponse:
-                "Calcus вернул ответ, который приложение не смогло прочитать."
+                return "Calcus вернул ответ, который приложение не смогло прочитать."
             case .unreadableResponse(let details):
                 if let details, !details.isEmpty {
-                    "Calcus вернул ответ в неожиданном формате: \(details)"
+                    return "Calcus вернул ответ в неожиданном формате: \(details)"
                 } else {
-                    "Calcus вернул ответ в неожиданном формате. Проверьте версию приложения и повторите расчёт."
+                    return "Calcus вернул ответ в неожиданном формате. Проверьте версию приложения и повторите расчёт."
                 }
             case .serverRejected(let status, let details):
                 let reason = details.flatMap { $0.isEmpty ? nil : "\n\($0)" } ?? ""
                 switch status {
-                case 400: "Calcus не принял параметры расчёта. Проверьте характеристики автомобиля и валюту.\(reason)"
-                case 401, 403: "Calcus отклонил доступ. Проверьте ID клиента и API-ключ в настройках.\(reason)"
-                case 429: "Calcus временно ограничил число запросов. Попробуйте позже.\(reason)"
-                default: "Сервис Calcus временно недоступен (ошибка \(status)).\(reason)"
+                case 400: return "Calcus не принял параметры расчёта. Проверьте характеристики автомобиля и валюту.\(reason)"
+                case 401, 403: return "Calcus отклонил доступ. Проверьте ID клиента и API-ключ в настройках.\(reason)"
+                case 429: return "Calcus временно ограничил число запросов. Попробуйте позже.\(reason)"
+                default: return "Сервис Calcus временно недоступен (ошибка \(status)).\(reason)"
                 }
             }
         }
