@@ -29,9 +29,14 @@ struct VehicleEditorView: View {
         NavigationStack {
             Form {
                 Section("Автомобиль") {
+                    #if os(iOS)
                     TextField("VIN", text: $vehicle.vin)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
+                    #else
+                    TextField("VIN", text: $vehicle.vin)
+                        .autocorrectionDisabled()
+                    #endif
                     catalogButton(.make, value: vehicle.make, enabled: true)
                     catalogButton(.model, value: vehicle.model, enabled: !vehicle.make.isEmpty)
                     catalogButton(.generation, value: vehicle.generation, enabled: !vehicle.model.isEmpty)
