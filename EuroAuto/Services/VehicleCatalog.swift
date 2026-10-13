@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import Compression
 
 struct CatalogMake: Decodable, Identifiable {
     let make: String
@@ -71,11 +72,55 @@ final class VehicleCatalogStore {
             return
         }
         do {
-            makes = try JSONDecoder().decode([CatalogMake].self, from: Data(contentsOf: url))
+            let resource = try Data(contentsOf: url)
+            let catalogData = try Self.decodeCatalogResource(resource)
+            makes = try JSONDecoder().decode([CatalogMake].self, from: catalogData)
                 .sorted { $0.make.localizedStandardCompare($1.make) == .orderedAscending }
+            if makes.isEmpty { loadError = "Каталог автомобилей пуст." }
         } catch {
             loadError = "Не удалось прочитать каталог: \(error.localizedDescription)"
         }
+    }
+
+    private struct CompressedCatalog: Decodable {
+        let encoding: String
+        let uncompressedBytes: Int
+        let data: String
+    }
+
+    private static func decodeCatalogResource(_ resource: Data) throws -> Data {
+        guard let envelope = try? JSONDecoder().decode(CompressedCatalog.self, from: resource) else {
+            return resource
+        }
+        guard envelope.encoding == "deflate-base64",
+              envelope.uncompressedBytes > 0,
+              envelope.uncompressedBytes <= 20_000_000,
+              let compressed = Data(base64Encoded: envelope.data) else {
+            throw CatalogError.invalidEnvelope
+        }
+
+        var decoded = Data(count: envelope.uncompressedBytes)
+        let decodedCount = compressed.withUnsafeBytes { source in
+            decoded.withUnsafeMutableBytes { destination in
+                guard let sourceAddress = source.bindMemory(to: UInt8.self).baseAddress,
+                      let destinationAddress = destination.bindMemory(to: UInt8.self).baseAddress else { return 0 }
+                return compression_decode_buffer(
+                    destinationAddress,
+                    envelope.uncompressedBytes,
+                    sourceAddress,
+                    compressed.count,
+                    nil,
+                    COMPRESSION_ZLIB
+                )
+            }
+        }
+        guard decodedCount == envelope.uncompressedBytes else { throw CatalogError.decompressionFailed }
+        return decoded
+    }
+
+    private enum CatalogError: Error {
+        case invalidEnvelope
+        case decompressionFailed
     }
 
     func models(for make: String) -> [CatalogModel] {
