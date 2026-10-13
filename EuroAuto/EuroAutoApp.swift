@@ -7,7 +7,11 @@ struct EuroAutoApp: App {
 
     init() {
         let schema = Schema([Customer.self, Vehicle.self, VehicleDocument.self])
+        #if os(iOS)
+        let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
+        #else
         let configuration = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+        #endif
         do {
             container = try ModelContainer(for: schema, configurations: [configuration])
         } catch {
