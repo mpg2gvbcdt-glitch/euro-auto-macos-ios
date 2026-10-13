@@ -20,22 +20,31 @@ enum AppSection: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @State private var selection: AppSection? = .overview
+    @State private var showingNewVehicle = false
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selection) {
-                Section("Nord Auto") {
-                    ForEach(AppSection.allCases) { section in
-                        Label(section.rawValue, systemImage: section.symbol)
-                            .tag(section as AppSection?)
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Nord Auto")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 10)
+
+                ForEach([AppSection.overview, .vehicles, .customers]) { section in
+                    SidebarButton(section: section, selection: $selection)
                 }
-                Section("Данные") {
-                    Label(AppSection.backup.rawValue, systemImage: AppSection.backup.symbol)
-                        .tag(AppSection.backup as AppSection?)
-                }
+
+                Text("Данные")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 14)
+
+                SidebarButton(section: .backup, selection: $selection)
+                Spacer(minLength: 0)
             }
-            .listStyle(.sidebar)
+            .padding(.horizontal, 8)
             .navigationTitle("Euro Auto")
             #if os(macOS)
             .navigationSplitViewColumnWidth(min: 210, ideal: 240)
@@ -43,9 +52,12 @@ struct ContentView: View {
         } detail: {
             switch selection ?? .overview {
             case .overview:
-                DashboardView()
+                DashboardView(onAddVehicle: {
+                    selection = .vehicles
+                    showingNewVehicle = true
+                })
             case .vehicles:
-                VehiclesView()
+                VehiclesView(showingNewVehicle: $showingNewVehicle)
             case .customers:
                 CustomersView()
             case .backup:
@@ -53,5 +65,27 @@ struct ContentView: View {
             }
         }
         .background(Color.euroCanvas)
+    }
+}
+
+private struct SidebarButton: View {
+    let section: AppSection
+    @Binding var selection: AppSection?
+
+    private var isSelected: Bool { selection == section }
+
+    var body: some View {
+        Button {
+            selection = section
+        } label: {
+            Label(section.rawValue, systemImage: section.symbol)
+                .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? Color.euroGreen : Color.euroInk)
+                .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+                .padding(.horizontal, 10)
+                .background(isSelected ? Color.euroGreen.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(RoundedRectangle(cornerRadius: 9))
+        }
+        .buttonStyle(.plain)
     }
 }
