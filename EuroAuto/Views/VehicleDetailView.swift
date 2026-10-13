@@ -5,11 +5,14 @@ import UniformTypeIdentifiers
 
 struct VehicleDetailView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Bindable var vehicle: Vehicle
     @State private var showingEditor = false
     @State private var showingImporter = false
     @State private var previewURL: URL?
     @State private var message: String?
+    @State private var messageTitle = "Документы"
+    @State private var showingDeleteConfirmation = false
 
     private var title: String {
         [vehicle.make, vehicle.model].filter { !$0.isEmpty }.joined(separator: " ").isEmpty
@@ -33,14 +36,14 @@ struct VehicleDetailView: View {
                     Button("Изменить") { showingEditor = true }.buttonStyle(.bordered)
                 }
 
-                HStack(spacing: 12) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 10)], spacing: 10) {
                     DetailMetric(title: "Статус", value: vehicle.vehicleStatus, symbol: "shippingbox")
                     DetailMetric(title: "Себестоимость", value: vehicle.totalCost.formatted(.currency(code: "RUB").locale(Locale(identifier: "ru_RU"))), symbol: "rublesign.circle")
                     DetailMetric(title: "Плановая прибыль", value: vehicle.expectedProfit.formatted(.currency(code: "RUB").locale(Locale(identifier: "ru_RU"))), symbol: "chart.line.uptrend.xyaxis")
                 }
 
                 GroupBox("Характеристики") {
-                    Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 12) {
+                    VStack(alignment: .leading, spacing: 12) {
                         detailRow("Поколение", vehicle.generation)
                         detailRow("Двигатель", [vehicle.engine, vehicle.engineVolumeCc.map { "\($0) см³" }, vehicle.enginePowerHp.map { "\($0) л.с." }].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
                         detailRow("Топливо / привод", [vehicle.engineType, vehicle.driveType].filter { !$0.isEmpty }.joined(separator: " · "))
@@ -48,8 +51,6 @@ struct VehicleDetailView: View {
                         detailRow("Габариты", [vehicle.vehicleLengthMm, vehicle.vehicleWidthMm, vehicle.vehicleHeightMm].contains(where: { $0 != nil }) ? [vehicle.vehicleLengthMm, vehicle.vehicleWidthMm, vehicle.vehicleHeightMm].map { $0.map(String.init) ?? "—" }.joined(separator: " × ") + " мм" : "")
                         detailRow("Заказчик", vehicle.customer?.name ?? "—")
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 8)
                 }
 
                 GroupBox {
@@ -129,8 +130,29 @@ struct VehicleDetailView: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .background(Color.euroCanvas)
+        .groupBoxStyle(EuroAutoGroupBoxStyle())
         .navigationTitle(title)
-        .toolbar { ToolbarItem { Button { showingEditor = true } label: { Image(systemName: "pencil") }.help("Изменить автомобиль") } }
+        .toolbar {
+            ToolbarItemGroup {
+                Button(role: .destructive) { showingDeleteConfirmation = true } label: {
+                    Label("Удалить", systemImage: "trash")
+                        .labelStyle(.iconOnly)
+                }
+                .tint(.red)
+                .help("Удалить автомобиль из реестра")
+                Button { showingEditor = true } label: {
+                    Label("Изменить", systemImage: "pencil")
+                        .labelStyle(.iconOnly)
+                }
+                .help("Изменить автомобиль")
+            }
+        }
+        .confirmationDialog("Удалить автомобиль?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Удалить автомобиль", role: .destructive, action: deleteVehicle)
+            Button("Отмена", role: .cancel) {}
+        } message: {
+            Text("Автомобиль и прикреплённые к нему документы будут удалены из реестра.")
+        }
         .sheet(isPresented: $showingEditor) {
             #if os(macOS)
             VehicleEditorView(vehicle: vehicle, isNew: false).frame(minWidth: 560, minHeight: 620)
@@ -140,15 +162,21 @@ struct VehicleDetailView: View {
         }
         .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.pdf, .jpeg, .png, .webP], allowsMultipleSelection: true, onCompletion: importDocuments)
         .quickLookPreview($previewURL)
-        .alert("Документы", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
+        .alert(messageTitle, isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("ОК") { message = nil }
         } message: { Text(message ?? "") }
     }
 
     private func detailRow(_ label: String, _ value: String) -> some View {
-        GridRow {
-            Text(label).foregroundStyle(.secondary)
-            Text(value.isEmpty ? "—" : value).fontWeight(.medium)
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(width: 125, alignment: .leading)
+            Text(value.isEmpty ? "—" : value)
+                .fontWeight(.medium)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -162,6 +190,7 @@ struct VehicleDetailView: View {
     }
 
     private func importDocuments(_ result: Result<[URL], Error>) {
+        messageTitle = "Документы"
         do {
             for url in try result.get() {
                 let document = try VehicleDocumentStore.importFile(at: url)
@@ -184,6 +213,18 @@ struct VehicleDetailView: View {
         modelContext.delete(document)
         try? modelContext.save()
     }
+
+    private func deleteVehicle() {
+        modelContext.delete(vehicle)
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            modelContext.rollback()
+            messageTitle = "Не удалось удалить автомобиль"
+            message = error.localizedDescription
+        }
+    }
 }
 
 private struct DetailMetric: View {
@@ -199,7 +240,8 @@ private struct DetailMetric: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-                .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 15))
-                .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.euroLine.opacity(0.75), lineWidth: 1))
+        .frame(minHeight: 98, alignment: .leading)
+        .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 15))
+        .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.euroLine.opacity(0.75), lineWidth: 1))
     }
 }

@@ -22,6 +22,8 @@ struct DashboardView: View {
                         .foregroundStyle(Color.euroInk)
                     Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "ru_RU"))).capitalized + "  ·  Сводка по автомобилям и заказам")
                         .foregroundStyle(.secondary)
+                    ImportRouteBadge()
+                        .padding(.top, 7)
                 }
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 185), spacing: 14)], spacing: 14) {
@@ -60,18 +62,14 @@ struct DashboardView: View {
                         }
                         .frame(maxWidth: .infinity, minHeight: 220)
                     } else {
-                        VStack(spacing: 0) {
+                        VStack(spacing: 10) {
                             ForEach(vehicles.prefix(6)) { vehicle in
                                 NavigationLink(destination: VehicleDetailView(vehicle: vehicle)) {
                                     VehicleRow(vehicle: vehicle)
                                 }
                                 .buttonStyle(.plain)
-                                if vehicle.id != vehicles.prefix(6).last?.id { Divider().padding(.leading, 60) }
                             }
                         }
-                        .padding(8)
-                        .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 20))
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.euroLine.opacity(0.75), lineWidth: 1))
                     }
                 }
             }
@@ -81,6 +79,42 @@ struct DashboardView: View {
         }
         .background(Color.euroCanvas)
         .navigationTitle("Обзор")
+    }
+}
+
+private struct ImportRouteBadge: View {
+    var body: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "globe.europe.africa")
+                .foregroundStyle(Color.euroGreen)
+            Text("ЕВРОПА")
+            routeSegment
+            Image(systemName: "car.side.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.euroGreen)
+            routeSegment
+            Text("РОССИЯ")
+            Image(systemName: "mappin.and.ellipse")
+                .foregroundStyle(Color.euroAmber)
+        }
+        .font(.system(size: 9, weight: .bold))
+        .tracking(1.1)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color.euroPanelRaised, in: Capsule())
+        .overlay(Capsule().stroke(Color.euroLine, lineWidth: 1))
+        .fixedSize(horizontal: true, vertical: false)
+        .accessibilityLabel("Маршрут импорта: Европа — Россия")
+    }
+
+    private var routeSegment: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<3, id: \.self) { _ in
+                Capsule().fill(Color.euroLine).frame(width: 7, height: 2)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 

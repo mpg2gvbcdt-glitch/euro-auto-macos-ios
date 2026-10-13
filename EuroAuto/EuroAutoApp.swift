@@ -38,3 +38,19 @@ extension Color {
     static let euroLine = Color(red: 0.19, green: 0.24, blue: 0.22)
     static let euroAmber = Color(red: 0.94, green: 0.69, blue: 0.36)
 }
+
+struct EuroAutoGroupBoxStyle: GroupBoxStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            configuration.label
+                .font(.headline)
+                .foregroundStyle(Color.euroInk)
+            configuration.content
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(17)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.euroLine.opacity(0.8), lineWidth: 1))
+    }
+}
