@@ -18,6 +18,9 @@ jobs:
       - name: Get source
         uses: actions/checkout@v4
 
+      - name: Validate vehicle catalog
+        run: python3 scripts/validate_vehicle_catalog.py
+
       - name: Build macOS app
         run: >-
           xcodebuild
@@ -28,6 +31,9 @@ jobs:
           -derivedDataPath "$RUNNER_TEMP/EuroAuto-macOS"
           CODE_SIGNING_ALLOWED=NO
           build
+
+      - name: Verify catalog is bundled in macOS app
+        run: python3 scripts/validate_vehicle_catalog.py "$RUNNER_TEMP/EuroAuto-macOS/Build/Products/Release/EuroAuto.app/Contents/Resources/vehicle-catalog.json"
 
       - name: Package macOS app
         run: |
