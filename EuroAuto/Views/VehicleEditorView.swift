@@ -140,7 +140,7 @@ struct VehicleEditorView: View {
                 }
             }
             .sheet(item: $catalogField) { field in
-                CatalogChoiceSheet(field: field, choices: choices(for: field)) { choice in
+                CatalogChoiceSheet(field: field, choices: choices(for: field), loadError: catalog.loadError) { choice in
                     apply(choice, to: field)
                 }
             }
@@ -262,6 +262,7 @@ private struct CatalogChoiceSheet: View {
     @State private var search = ""
     let field: CatalogField
     let choices: [String]
+    let loadError: String?
     let onChoose: (String) -> Void
 
     private var filteredChoices: [String] {
@@ -271,15 +272,25 @@ private struct CatalogChoiceSheet: View {
 
     var body: some View {
         NavigationStack {
-            List(filteredChoices, id: \.self) { choice in
-                Button {
-                    onChoose(choice)
-                    dismiss()
-                } label: {
-                    Text(choice).foregroundStyle(.primary)
+            Group {
+                if filteredChoices.isEmpty {
+                    ContentUnavailableView(
+                        "Нет вариантов",
+                        systemImage: "car.side",
+                        description: Text(loadError ?? "Проверьте поиск или выберите предыдущий пункт каталога.")
+                    )
+                } else {
+                    List(filteredChoices, id: \.self) { choice in
+                        Button {
+                            onChoose(choice)
+                            dismiss()
+                        } label: {
+                            Text(choice).foregroundStyle(.primary)
+                        }
+                    }
+                    .listStyle(.plain)
                 }
             }
-            .listStyle(.plain)
             .searchable(text: $search, prompt: "Поиск")
             .navigationTitle(field.title)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Закрыть") { dismiss() } } }
