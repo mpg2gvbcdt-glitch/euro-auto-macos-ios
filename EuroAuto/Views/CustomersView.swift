@@ -76,6 +76,7 @@ struct CustomersView: View {
         do {
             try modelContext.save()
             WebsiteSyncService.markCustomerDeleted(code: deletedCode)
+            WebsiteAutoSync.schedule(context: modelContext)
         } catch {
             modelContext.rollback()
             deleteError = error.localizedDescription
@@ -175,7 +176,7 @@ private struct CustomerEditorView: View {
         }
         if isNew { modelContext.insert(customer) }
         customer.updatedAt = .now
-        do { try modelContext.save(); dismiss() }
+        do { try modelContext.save(); WebsiteAutoSync.schedule(context: modelContext); dismiss() }
         catch { errorMessage = "Не удалось сохранить заказчика: \(error.localizedDescription)" }
     }
 }

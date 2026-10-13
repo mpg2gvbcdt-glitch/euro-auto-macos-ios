@@ -8,6 +8,7 @@ struct WebsiteSyncView: View {
     @State private var syncing = false
     @State private var message: String?
     @State private var isError = false
+    @AppStorage("11-35.sync.autoStatus") private var autoSyncStatus = ""
 
     var body: some View {
         ScrollView {
@@ -63,12 +64,19 @@ struct WebsiteSyncView: View {
                         .padding(14).background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 14))
                 }
 
+                if !autoSyncStatus.isEmpty {
+                    Label(autoSyncStatus, systemImage: autoSyncStatus.contains("не удалась") ? "exclamationmark.triangle.fill" : "arrow.triangle.2.circlepath.icloud")
+                        .font(.subheadline).foregroundStyle(autoSyncStatus.contains("не удалась") ? Color.orange : Color.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14).background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 14))
+                }
+
                 GroupBox {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("Как это работает", systemImage: "info.circle").font(.headline)
-                        Text("Нажмите кнопку на каждом устройстве после входа. Синхронизируются карточки автомобилей, все цены и расходы, заказчики и прикреплённые файлы. Изменения и удаления из приложения отправляются на сайт; записи объединяются по VIN и ID заказчика. Пароль хранится только в Связке ключей устройства.")
+                        Text("Один раз войдите на каждом устройстве кнопкой выше, чтобы сохранить пароль. После этого карточки автомобилей, расходы, заказчики и документы будут синхронизироваться автоматически после сохранения и при открытии приложения, если есть интернет. Кнопка выше остаётся для принудительной синхронизации. Пароль хранится только в Связке ключей устройства.")
                             .font(.subheadline).foregroundStyle(.secondary)
-                        Text("Для передачи обновлений нужна сеть и нажатие кнопки синхронизации. Уже сохранённые записи и файлы остаются доступны офлайн. Автомобили без VIN будут пропущены и отмечены в отчёте синхронизации.")
+                        Text("Без интернета изменения останутся на устройстве и отправятся при следующем открытии приложения с подключением. Уже сохранённые записи и файлы доступны офлайн.")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading).padding(8)
@@ -92,6 +100,7 @@ struct WebsiteSyncView: View {
             let report = try await WebsiteSyncService.synchronize(server: server, password: password, context: modelContext)
             password = ""
             message = "Готово. " + report.summary
+            autoSyncStatus = "Автоматическая синхронизация настроена на этом устройстве."
             isError = false
         } catch {
             message = error.localizedDescription

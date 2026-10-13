@@ -218,6 +218,7 @@ struct CalcusCustomsCalculatorView: View {
         vehicle.updatedAt = .now
         do {
             try modelContext.save()
+            WebsiteAutoSync.schedule(context: modelContext)
             applyMessage = "Расчёт записан в расходы автомобиля."
         } catch {
             applyMessage = "Не удалось сохранить расходы: \(error.localizedDescription)"

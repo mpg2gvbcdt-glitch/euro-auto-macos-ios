@@ -233,6 +233,7 @@ enum PortableBackupService {
         }
         do { try context.save() }
         catch { context.rollback(); throw error }
+        WebsiteAutoSync.schedule(context: context)
         return BackupImportResult(customers: backup.customers.count, vehicles: importedVehicles,
                                   documents: importedDocuments, skippedDocuments: skippedDocuments)
     }

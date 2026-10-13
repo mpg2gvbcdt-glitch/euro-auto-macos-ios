@@ -722,3 +722,42 @@ private enum SyncTombstones {
         UserDefaults.standard.set(current.sorted(), forKey: key)
     }
 }
+
+@MainActor
+enum WebsiteAutoSync {
+    private static var pendingTask: Task<Void, Never>?
+    private static var isSyncing = false
+    private static var needsAnotherPass = false
+    private static let statusKey = "11-35.sync.autoStatus"
+
+    static func schedule(context: ModelContext) {
+        guard WebsiteSyncService.hasPassword else {
+            UserDefaults.standard.set("Автосинхронизация включится после первого входа в разделе «Синхронизация».", forKey: statusKey)
+            return
+        }
+        needsAnotherPass = true
+        guard pendingTask == nil, !isSyncing else { return }
+        pendingTask = Task {
+            do { try await Task.sleep(for: .seconds(2)) }
+            catch { return }
+            pendingTask = nil
+            await flush(context: context)
+        }
+    }
+
+    private static func flush(context: ModelContext) async {
+        guard !isSyncing else { return }
+        isSyncing = true
+        repeat {
+            needsAnotherPass = false
+            do {
+                let report = try await WebsiteSyncService.synchronize(server: WebsiteSyncService.savedServer, password: "", context: context)
+                UserDefaults.standard.set("Автоматически синхронизировано. \(report.summary)", forKey: statusKey)
+            } catch {
+                UserDefaults.standard.set("Автосинхронизация не удалась: \(error.localizedDescription)", forKey: statusKey)
+                needsAnotherPass = false
+            }
+        } while needsAnotherPass
+        isSyncing = false
+    }
+}

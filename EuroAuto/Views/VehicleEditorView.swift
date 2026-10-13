@@ -393,6 +393,7 @@ struct VehicleEditorView: View {
         if isNew { modelContext.insert(vehicle) }
         do {
             try modelContext.save()
+            WebsiteAutoSync.schedule(context: modelContext)
             dismiss()
         } catch {
             saveError = "Не удалось сохранить автомобиль: \(error.localizedDescription)"

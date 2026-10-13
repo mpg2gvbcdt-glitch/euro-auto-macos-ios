@@ -194,6 +194,7 @@ struct VehicleDetailView: View {
             }
             vehicle.updatedAt = .now
             try modelContext.save()
+            WebsiteAutoSync.schedule(context: modelContext)
         } catch {
             message = error.localizedDescription
         }
@@ -207,6 +208,7 @@ struct VehicleDetailView: View {
         do {
             try modelContext.save()
             WebsiteSyncService.markDocumentDeleted(remoteID: remoteID)
+            WebsiteAutoSync.schedule(context: modelContext)
         } catch {
             modelContext.rollback()
             messageTitle = "Не удалось удалить документ"
@@ -221,6 +223,7 @@ struct VehicleDetailView: View {
         do {
             try modelContext.save()
             WebsiteSyncService.markVehicleDeleted(vin: deletedVIN, localID: deletedID)
+            WebsiteAutoSync.schedule(context: modelContext)
             dismiss()
         } catch {
             modelContext.rollback()

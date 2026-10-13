@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 enum AppSection: String, CaseIterable, Identifiable {
     case overview = "Обзор"
@@ -25,6 +26,8 @@ enum AppSection: String, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AppSection? = .overview
     @State private var showingNewVehicle = false
 
@@ -93,6 +96,10 @@ struct ContentView: View {
             }
         }
         .background(Color.euroCanvas)
+        .task { WebsiteAutoSync.schedule(context: modelContext) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { WebsiteAutoSync.schedule(context: modelContext) }
+        }
     }
 }
 

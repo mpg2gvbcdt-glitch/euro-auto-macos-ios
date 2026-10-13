@@ -132,6 +132,7 @@ struct VehiclesView: View {
         do {
             try modelContext.save()
             WebsiteSyncService.markVehicleDeleted(vin: deletedVIN, localID: deletedID)
+            WebsiteAutoSync.schedule(context: modelContext)
         } catch {
             modelContext.rollback()
             deleteError = error.localizedDescription
