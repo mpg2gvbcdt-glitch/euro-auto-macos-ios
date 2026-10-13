@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct DashboardView: View {
+    let onAddVehicle: () -> Void
     @Query(sort: \Vehicle.updatedAt, order: .reverse) private var vehicles: [Vehicle]
 
     private var inTransit: Int { vehicles.filter { $0.vehicleStatus == "В пути" }.count }
@@ -40,8 +41,23 @@ struct DashboardView: View {
                     }
 
                     if vehicles.isEmpty {
-                        ContentUnavailableView("Пока нет автомобилей", systemImage: "car.side", description: Text("Добавьте первую машину, чтобы начать учет."))
-                            .frame(minHeight: 190)
+                        VStack(spacing: 12) {
+                            Image(systemName: "car.side")
+                                .font(.system(size: 34))
+                                .foregroundStyle(.secondary)
+                            Text("Пока нет автомобилей")
+                                .font(.headline)
+                            Text("Добавьте первую машину, чтобы начать учет.")
+                                .foregroundStyle(.secondary)
+                            Button(action: onAddVehicle) {
+                                Label("Добавить автомобиль", systemImage: "plus")
+                                    .fontWeight(.semibold)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.euroGreen)
+                            .padding(.top, 4)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 220)
                     } else {
                         VStack(spacing: 0) {
                             ForEach(vehicles.prefix(6)) { vehicle in
