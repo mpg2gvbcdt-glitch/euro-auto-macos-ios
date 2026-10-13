@@ -24,7 +24,8 @@ struct BackupView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Перенос данных").font(.system(size: 30, weight: .bold, design: .rounded))
+                    Text("РЕЗЕРВНОЕ КОПИРОВАНИЕ").font(.system(size: 10, weight: .bold)).tracking(1.5).foregroundStyle(Color.euroGreen)
+                    Text("Перенос данных").font(.system(size: 32, weight: .bold, design: .rounded))
                     Text("Создайте копию карточек и документов или перенесите данные из отчётности.")
                         .foregroundStyle(.secondary)
                 }
