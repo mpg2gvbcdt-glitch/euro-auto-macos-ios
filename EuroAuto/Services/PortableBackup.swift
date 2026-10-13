@@ -18,6 +18,7 @@ struct BackupCustomer: Codable {
 }
 
 struct BackupVehicle: Codable {
+    var id: String?
     var vin: String
     var make: String
     var model: String
@@ -86,13 +87,11 @@ struct BackupImportResult {
 
 enum PortableBackupError: LocalizedError {
     case unsupportedVersion
-    case invalidVIN
     case invalidDocument(String)
 
     var errorDescription: String? {
         switch self {
         case .unsupportedVersion: "Формат резервной копии не поддерживается."
-        case .invalidVIN: "В файле есть автомобиль без VIN. Импорт остановлен."
         case .invalidDocument(let name): "Не удалось восстановить документ «\(name)»."
         }
     }
@@ -110,7 +109,7 @@ enum PortableBackupService {
             },
             vehicles: vehicles.map { vehicle in
                 BackupVehicle(
-                    vin: vehicle.vin, make: vehicle.make, model: vehicle.model, generation: vehicle.generation,
+                    id: vehicle.id.uuidString, vin: vehicle.vin, make: vehicle.make, model: vehicle.model, generation: vehicle.generation,
                     engine: vehicle.engine, year: vehicle.year, engineVolumeCc: vehicle.engineVolumeCc,
                     enginePowerHp: vehicle.enginePowerHp, engineType: vehicle.engineType, engineCylinders: vehicle.engineCylinders,
                     bodyType: vehicle.bodyType, driveType: vehicle.driveType, transmission: vehicle.transmission,
@@ -144,33 +143,46 @@ enum PortableBackupService {
         let backup = try JSONDecoder().decode(PortableBackup.self, from: Data(contentsOf: url))
         guard backup.formatVersion == 1 else { throw PortableBackupError.unsupportedVersion }
         for item in backup.vehicles {
-            guard !item.vin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw PortableBackupError.invalidVIN }
             for file in item.documents where Data(base64Encoded: file.dataBase64) == nil {
                 throw PortableBackupError.invalidDocument(file.filename)
             }
         }
 
-        var customersByCode = Dictionary(uniqueKeysWithValues: try context.fetch(FetchDescriptor<Customer>()).map { ($0.code.uppercased(), $0) })
+        var customersByCode: [String: Customer] = [:]
+        for customer in try context.fetch(FetchDescriptor<Customer>()) {
+            let key = customer.code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if !key.isEmpty, customersByCode[key] == nil { customersByCode[key] = customer }
+        }
         for item in backup.customers {
-            let key = item.code.uppercased()
-            let customer = customersByCode[key] ?? Customer(name: item.name, code: item.code)
+            let key = item.code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            let customer = (key.isEmpty ? nil : customersByCode[key]) ?? Customer(name: item.name, code: item.code)
             customer.name = item.name
             customer.phone = item.phone
             customer.email = item.email
             customer.city = item.city
             customer.notes = item.notes
-            if customersByCode[key] == nil { context.insert(customer); customersByCode[key] = customer }
+            if key.isEmpty || customersByCode[key] == nil {
+                context.insert(customer)
+                if !key.isEmpty { customersByCode[key] = customer }
+            }
         }
 
         let existingVehicles = try context.fetch(FetchDescriptor<Vehicle>())
-        var vehiclesByVIN = Dictionary(uniqueKeysWithValues: existingVehicles.map { ($0.vin.uppercased(), $0) })
+        var vehiclesByVIN: [String: Vehicle] = [:]
+        var vehiclesByID = Dictionary(uniqueKeysWithValues: existingVehicles.map { ($0.id.uuidString.uppercased(), $0) })
+        for vehicle in existingVehicles {
+            let key = vehicle.vin.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if !key.isEmpty, vehiclesByVIN[key] == nil { vehiclesByVIN[key] = vehicle }
+        }
         var importedVehicles = 0
         var importedDocuments = 0
         var skippedDocuments = 0
         for item in backup.vehicles {
             let vin = item.vin.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-            guard !vin.isEmpty else { throw PortableBackupError.invalidVIN }
-            let vehicle = vehiclesByVIN[vin] ?? Vehicle(vin: vin)
+            let backupID = item.id?.uppercased()
+            let existing = (!vin.isEmpty ? vehiclesByVIN[vin] : nil) ?? backupID.flatMap { vehiclesByID[$0] }
+            let vehicle = existing ?? Vehicle(vin: vin)
+            if existing == nil, let id = backupID.flatMap(UUID.init(uuidString:)) { vehicle.id = id }
             vehicle.vin = vin
             vehicle.make = item.make; vehicle.model = item.model; vehicle.generation = item.generation; vehicle.engine = item.engine
             vehicle.year = item.year; vehicle.engineVolumeCc = item.engineVolumeCc; vehicle.enginePowerHp = item.enginePowerHp
@@ -190,7 +202,12 @@ enum PortableBackupService {
             vehicle.importerType = item.importerType; vehicle.importRoute = item.importRoute; vehicle.notes = item.notes
             vehicle.createdAt = parseTimestamp(item.createdAt) ?? vehicle.createdAt
             vehicle.updatedAt = parseTimestamp(item.updatedAt) ?? .now
-            if vehiclesByVIN[vin] == nil { context.insert(vehicle); vehiclesByVIN[vin] = vehicle; importedVehicles += 1 }
+            if existing == nil {
+                context.insert(vehicle)
+                importedVehicles += 1
+            }
+            vehiclesByID[vehicle.id.uuidString.uppercased()] = vehicle
+            if !vin.isEmpty { vehiclesByVIN[vin] = vehicle }
 
             for file in item.documents {
                 if (vehicle.documents ?? []).contains(where: { $0.filename == file.filename && timestamp($0.createdAt) == file.createdAt }) {
@@ -206,7 +223,8 @@ enum PortableBackupService {
                 importedDocuments += 1
             }
         }
-        try context.save()
+        do { try context.save() }
+        catch { context.rollback(); throw error }
         return BackupImportResult(customers: backup.customers.count, vehicles: importedVehicles,
                                   documents: importedDocuments, skippedDocuments: skippedDocuments)
     }
