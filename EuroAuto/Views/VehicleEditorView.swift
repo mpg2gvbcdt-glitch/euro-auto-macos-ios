@@ -2,14 +2,33 @@ import SwiftData
 import SwiftUI
 
 private enum CatalogField: String, Identifiable {
-    case make, model, generation, engine
+    case make, model, generation, year, engine
     var id: String { rawValue }
     var title: String {
         switch self {
         case .make: "Марка"
         case .model: "Модель"
         case .generation: "Поколение"
+        case .year: "Год выпуска"
         case .engine: "Двигатель"
+        }
+    }
+    var subtitle: String {
+        switch self {
+        case .make: "Выберите производителя автомобиля"
+        case .model: "Модели выбранной марки"
+        case .generation: "Поколение и обозначение кузова"
+        case .year: "Год выпуска выбранного поколения"
+        case .engine: "Двигатели, доступные для выбранного года"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .make: "car.side.fill"
+        case .model: "car.side"
+        case .generation: "rectangle.3.group"
+        case .year: "calendar"
+        case .engine: "gearshape.fill"
         }
     }
 }
@@ -68,12 +87,8 @@ struct VehicleEditorView: View {
                 }
 
                 Section("Характеристики из каталога") {
-                    if let generation = selectedGeneration, let firstYear = generation.from {
-                        Picker("Год выпуска", selection: yearSelection(default: firstYear)) {
-                            ForEach(availableYears(for: generation), id: \.self) { year in
-                                Text(String(year)).tag(year)
-                            }
-                        }
+                    if selectedGeneration != nil {
+                        catalogButton(.year, value: vehicle.year.map(String.init) ?? "", enabled: true)
                     } else {
                         LabeledContent("Год выпуска", value: vehicle.year.map(String.init) ?? "—")
                     }
@@ -157,6 +172,8 @@ struct VehicleEditorView: View {
                 if let saveError { Text(saveError).foregroundStyle(.red) }
             }
             .formStyle(.grouped)
+            .pickerStyle(.menu)
+            .tint(.euroGreen)
             .navigationTitle(isNew ? "Новый автомобиль" : "Изменить автомобиль")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Отмена") { dismiss() } }
@@ -165,7 +182,12 @@ struct VehicleEditorView: View {
                 }
             }
             .sheet(item: $catalogField) { field in
-                CatalogChoiceSheet(field: field, choices: choices(for: field), loadError: catalog.loadError) { choice in
+                CatalogChoiceSheet(
+                    field: field,
+                    choices: choices(for: field),
+                    selectedChoice: selectedChoice(for: field),
+                    loadError: catalog.loadError
+                ) { choice in
                     apply(choice, to: field)
                 }
             }
@@ -195,18 +217,6 @@ struct VehicleEditorView: View {
         guard let start = generation.from else { return [] }
         let end = max(start, generation.to ?? Calendar.current.component(.year, from: .now))
         return Array(start...end)
-    }
-
-    private func yearSelection(default firstYear: Int) -> Binding<Int> {
-        Binding(
-            get: { vehicle.year ?? firstYear },
-            set: { year in
-                guard vehicle.year != year else { return }
-                vehicle.year = year
-                vehicle.engine = ""
-                clearEngineSpecs()
-            }
-        )
     }
 
     private var dimensions: String {
@@ -257,7 +267,18 @@ struct VehicleEditorView: View {
         case .make: catalog.makes.map(\.make)
         case .model: catalog.models(for: vehicle.make).map(\.n)
         case .generation: catalog.generations(for: vehicle.make, model: vehicle.model).map(\.n)
+        case .year: selectedGeneration.map { availableYears(for: $0).map(String.init) } ?? []
         case .engine: enginesForSelectedYear().map(\.n)
+        }
+    }
+
+    private func selectedChoice(for field: CatalogField) -> String {
+        switch field {
+        case .make: vehicle.make
+        case .model: vehicle.model
+        case .generation: vehicle.generation
+        case .year: vehicle.year.map(String.init) ?? ""
+        case .engine: vehicle.engine
         }
     }
 
@@ -287,6 +308,11 @@ struct VehicleEditorView: View {
                 vehicle.year = generation.from
                 vehicle.bodyType = generation.body ?? ""
             }
+        case .year:
+            guard let year = Int(choice) else { return }
+            vehicle.year = year
+            vehicle.engine = ""
+            clearEngineSpecs()
         case .engine:
             vehicle.engine = choice
             if let engine = enginesForSelectedYear().first(where: { $0.n == choice }) {
@@ -339,6 +365,7 @@ private struct CatalogChoiceSheet: View {
     @State private var search = ""
     let field: CatalogField
     let choices: [String]
+    let selectedChoice: String
     let loadError: String?
     let onChoose: (String) -> Void
 
@@ -349,31 +376,97 @@ private struct CatalogChoiceSheet: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if filteredChoices.isEmpty {
-                    ContentUnavailableView(
-                        "Нет вариантов",
-                        systemImage: "car.side",
-                        description: Text(loadError ?? "Проверьте поиск или выберите предыдущий пункт каталога.")
-                    )
-                } else {
-                    List(filteredChoices, id: \.self) { choice in
-                        Button {
-                            onChoose(choice)
-                            dismiss()
-                        } label: {
-                            Text(choice).foregroundStyle(.primary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 14) {
+                        Image(systemName: field.symbol)
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundStyle(Color.euroGreen)
+                            .frame(width: 48, height: 48)
+                            .background(Color.euroGreen.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(field.title)
+                                .font(.headline)
+                                .foregroundStyle(Color.euroInk)
+                            Text(field.subtitle)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    HStack(spacing: 7) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .foregroundStyle(Color.euroGreen)
+                        Text("\(filteredChoices.count) вариантов")
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.caption.weight(.medium))
+
+                    if filteredChoices.isEmpty {
+                        ContentUnavailableView(
+                            "Нет вариантов",
+                            systemImage: field.symbol,
+                            description: Text(loadError ?? "Проверьте поиск или выберите предыдущий пункт каталога.")
+                        )
+                        .frame(maxWidth: .infinity, minHeight: 220)
+                    } else {
+                        LazyVStack(spacing: 9) {
+                            ForEach(filteredChoices, id: \.self) { choice in
+                                let isSelected = choice == selectedChoice
+                                Button {
+                                    onChoose(choice)
+                                    dismiss()
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: field.symbol)
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundStyle(isSelected ? Color.euroGreen : Color.euroInk.opacity(0.48))
+                                            .frame(width: 36, height: 36)
+                                            .background(isSelected ? Color.euroGreen.opacity(0.12) : Color.euroPanelRaised, in: RoundedRectangle(cornerRadius: 11))
+                                        Text(choice)
+                                            .font(.system(size: 15, weight: isSelected ? .semibold : .medium))
+                                            .foregroundStyle(Color.euroInk)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                        Spacer(minLength: 8)
+                                        if isSelected {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 18, weight: .semibold))
+                                                .foregroundStyle(Color.euroGreen)
+                                        } else {
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundStyle(Color.euroInk.opacity(0.42))
+                                        }
+                                    }
+                                    .padding(.horizontal, 13)
+                                    .padding(.vertical, 10)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(isSelected ? Color.euroGreen.opacity(0.07) : Color.euroPanel, in: RoundedRectangle(cornerRadius: 15))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 15)
+                                            .stroke(isSelected ? Color.euroGreen.opacity(0.42) : Color.euroLine.opacity(0.85), lineWidth: 1)
+                                    }
+                                    .contentShape(RoundedRectangle(cornerRadius: 15))
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
-                    .listStyle(.plain)
                 }
+                .frame(maxWidth: 660)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 18)
+                .frame(maxWidth: .infinity)
             }
+            .background(Color.euroCanvas)
             .searchable(text: $search, prompt: "Поиск")
             .navigationTitle(field.title)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Закрыть") { dismiss() } } }
         }
         #if os(macOS)
-        .frame(minWidth: 430, minHeight: 500)
+        .frame(minWidth: 430, idealWidth: 560, maxWidth: 760, minHeight: 500, idealHeight: 660)
         #endif
     }
 }
