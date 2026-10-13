@@ -48,9 +48,9 @@ struct CustomersView: View {
         .navigationTitle("Заказчики")
         .sheet(isPresented: $showingNew) {
             #if os(macOS)
-            CustomerEditorView(customer: Customer(), isNew: true).frame(minWidth: 430, minHeight: 500)
+            CustomerEditorView(customer: Customer(name: ""), isNew: true).frame(minWidth: 430, minHeight: 500)
             #else
-            CustomerEditorView(customer: Customer(), isNew: true)
+            CustomerEditorView(customer: Customer(name: ""), isNew: true)
             #endif
         }
     }
@@ -103,9 +103,14 @@ private struct CustomerEditorView: View {
         NavigationStack {
             Form {
                 Section("Контакт") {
+                    #if os(iOS)
                     TextField("ID клиента", text: $customer.code)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
+                    #else
+                    TextField("ID клиента", text: $customer.code)
+                        .autocorrectionDisabled()
+                    #endif
                     TextField("Имя и фамилия", text: $customer.name)
                     TextField("Телефон", text: $customer.phone)
                     TextField("Email", text: $customer.email)
