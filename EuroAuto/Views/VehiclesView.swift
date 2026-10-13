@@ -26,8 +26,9 @@ struct VehiclesView: View {
         VStack(spacing: 0) {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Автомобили").font(.system(size: 30, weight: .bold, design: .rounded))
-                    Text("Карточки, расходы и документы по каждой машине").foregroundStyle(.secondary)
+                    Text("АВТОПАРК").font(.system(size: 10, weight: .bold)).tracking(1.5).foregroundStyle(Color.euroGreen)
+                    Text("Автомобили").font(.system(size: 32, weight: .bold, design: .rounded))
+                    Text("Карточки, расходы и документы по каждой машине").font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button { showingNewVehicle = true } label: {
@@ -85,6 +86,7 @@ struct VehiclesView: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .searchable(text: $searchText, prompt: "Марка, модель, VIN или клиент")
             }
         }
@@ -158,7 +160,8 @@ struct VehicleRow: View {
             }
         }
         .padding(13)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.euroLine.opacity(0.75), lineWidth: 1))
         .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 }
