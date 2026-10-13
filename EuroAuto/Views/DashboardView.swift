@@ -13,13 +13,14 @@ struct DashboardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 VStack(alignment: .leading, spacing: 7) {
-                    Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "ru_RU"))).capitalized)
-                        .font(.subheadline.weight(.medium))
+                    Text("NORD AUTO  /  ОПЕРАЦИОННАЯ СВОДКА")
+                        .font(.system(size: 10, weight: .bold))
+                        .tracking(1.6)
                         .foregroundStyle(Color.euroGreen)
                     Text("Рабочий стол")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.euroInk)
-                    Text("Сводка по автомобилям и заказам")
+                    Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "ru_RU"))).capitalized + "  ·  Сводка по автомобилям и заказам")
                         .foregroundStyle(.secondary)
                 }
 
@@ -68,8 +69,9 @@ struct DashboardView: View {
                                 if vehicle.id != vehicles.prefix(6).last?.id { Divider().padding(.leading, 60) }
                             }
                         }
-                        .padding(.horizontal, 14)
-                        .background(.background, in: RoundedRectangle(cornerRadius: 18))
+                        .padding(8)
+                        .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 20))
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.euroLine.opacity(0.75), lineWidth: 1))
                     }
                 }
             }
@@ -102,6 +104,7 @@ private struct MetricCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(17)
-        .background(.background, in: RoundedRectangle(cornerRadius: 18))
+        .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.euroLine.opacity(0.8), lineWidth: 1))
     }
 }
