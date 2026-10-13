@@ -34,7 +34,7 @@ struct ContentView: View {
                         .frame(width: 38, height: 38)
                         .background(Color.euroGreen.opacity(0.13), in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("NORD AUTO").font(.system(size: 13, weight: .bold, design: .rounded)).tracking(1.1)
+                        Text("11/35").font(.system(size: 13, weight: .bold, design: .rounded)).tracking(1.1)
                         Text("УЧЁТ АВТОМОБИЛЕЙ").font(.system(size: 8, weight: .semibold)).tracking(1).foregroundStyle(.tertiary)
                     }
                     .foregroundStyle(Color.euroInk)
@@ -57,7 +57,7 @@ struct ContentView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 8)
-            .navigationTitle("Euro Auto")
+            .navigationTitle("11/35")
             #if os(macOS)
             .navigationSplitViewColumnWidth(min: 210, ideal: 240)
             #endif

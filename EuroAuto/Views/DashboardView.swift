@@ -13,7 +13,7 @@ struct DashboardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 VStack(alignment: .leading, spacing: 7) {
-                    Text("NORD AUTO  /  ОПЕРАЦИОННАЯ СВОДКА")
+                    Text("11/35  /  ОПЕРАЦИОННАЯ СВОДКА")
                         .font(.system(size: 10, weight: .bold))
                         .tracking(1.6)
                         .foregroundStyle(Color.euroGreen)

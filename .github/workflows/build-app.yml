@@ -1,4 +1,4 @@
-name: Build Nord Auto
+name: Build 11/35
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
           mkdir -p artifacts
           ditto -c -k --sequesterRsrc --keepParent \
             "$RUNNER_TEMP/EuroAuto-macOS/Build/Products/Release/EuroAuto.app" \
-            artifacts/Nord-Auto-macOS.zip
+            artifacts/11-35-macOS.zip
 
       - name: Verify iPhone target compiles
         run: >-
@@ -59,7 +59,7 @@ jobs:
       - name: Upload app artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Nord-Auto-Apple-builds
-          path: artifacts/Nord-Auto-macOS.zip
+          name: 11-35-Apple-builds
+          path: artifacts/11-35-macOS.zip
           if-no-files-found: error
           retention-days: 30

@@ -144,7 +144,7 @@
 			CURRENT_PROJECT_VERSION = 1;
 			ENABLE_PREVIEWS = YES;
 			GENERATE_INFOPLIST_FILE = YES;
-			INFOPLIST_KEY_CFBundleDisplayName = "Nord Auto";
+			INFOPLIST_KEY_CFBundleDisplayName = "11/35";
 			INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 			MACOSX_DEPLOYMENT_TARGET = 14.0;
@@ -164,7 +164,7 @@
 			CURRENT_PROJECT_VERSION = 1;
 			ENABLE_PREVIEWS = YES;
 			GENERATE_INFOPLIST_FILE = YES;
-			INFOPLIST_KEY_CFBundleDisplayName = "Nord Auto";
+			INFOPLIST_KEY_CFBundleDisplayName = "11/35";
 			INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 			MACOSX_DEPLOYMENT_TARGET = 14.0;
