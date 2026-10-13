@@ -22,6 +22,9 @@ struct VehicleEditorView: View {
     let isNew: Bool
     @State private var catalogField: CatalogField?
     @State private var saveError: String?
+    @State private var isLoadingCBRRate = false
+    @State private var cbrRateMessage: String?
+    @State private var cbrRateMessageIsError = false
 
     private let catalog = VehicleCatalogStore.shared
 
@@ -94,6 +97,20 @@ struct VehicleEditorView: View {
                     }
                     moneyField("Цена покупки, \(vehicle.currency)", value: $vehicle.purchasePrice)
                     moneyField("Курс, ₽ за 1 \(vehicle.currency)", value: $vehicle.fxRate)
+                    Button {
+                        Task { await loadCBRRate() }
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isLoadingCBRRate { ProgressView().controlSize(.small) }
+                            Label(isLoadingCBRRate ? "Загружаю курс…" : "Подставить курс ЦБ", systemImage: "arrow.down.circle")
+                        }
+                    }
+                    .disabled(isLoadingCBRRate)
+                    if let cbrRateMessage {
+                        Text(cbrRateMessage)
+                            .font(.footnote)
+                            .foregroundStyle(cbrRateMessageIsError ? Color.euroAmber : Color.euroGreen)
+                    }
                     moneyField("Доставка до порта, ₽", value: $vehicle.deliveryCost)
                     moneyField("Фрахт, ₽", value: $vehicle.freightCost)
                     Text("Таможенные и прочие расходы ниже указываются в рублях. Себестоимость считается в ₽ по формуле: цена покупки × курс + расходы.")
@@ -200,6 +217,27 @@ struct VehicleEditorView: View {
 
     private func moneyField(_ title: String, value: Binding<Double>) -> some View {
         TextField(title, value: value, format: .number.precision(.fractionLength(0...2)))
+    }
+
+    @MainActor
+    private func loadCBRRate() async {
+        isLoadingCBRRate = true
+        cbrRateMessage = nil
+        defer { isLoadingCBRRate = false }
+        do {
+            let snapshot = try await CBRCurrencyRatesService.fetchRates(for: vehicle.purchaseDate ?? .now)
+            guard let rate = snapshot.ratesToRuble[vehicle.currency] else {
+                cbrRateMessageIsError = true
+                cbrRateMessage = "В ответе Банка России нет курса \(vehicle.currency)."
+                return
+            }
+            vehicle.fxRate = rate
+            cbrRateMessageIsError = false
+            cbrRateMessage = "Установлен курс \(rate.formatted(.number.precision(.fractionLength(2...4)))) ₽ на \(snapshot.officialDate.formatted(date: .numeric, time: .omitted))."
+        } catch {
+            cbrRateMessageIsError = true
+            cbrRateMessage = "Не удалось получить курс ЦБ: \(error.localizedDescription)"
+        }
     }
 
     private func catalogButton(_ field: CatalogField, value: String, enabled: Bool) -> some View {

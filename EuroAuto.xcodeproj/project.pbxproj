@@ -20,6 +20,8 @@
 		A1000000000000000000000C /* VEHICLE-CATALOG-SOURCE.md in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* VEHICLE-CATALOG-SOURCE.md */; };
 		A1000000000000000000000D /* PortableBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* PortableBackup.swift */; };
 		A1000000000000000000000E /* BackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* BackupView.swift */; };
+		A1000000000000000000000F /* CBRCurrencyRates.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000012 /* CBRCurrencyRates.swift */; };
+		A10000000000000000000010 /* CurrencyConverterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000013 /* CurrencyConverterView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +42,8 @@
 		B1000000000000000000000F /* VEHICLE-CATALOG-SOURCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "VEHICLE-CATALOG-SOURCE.md"; sourceTree = "<group>"; };
 		B10000000000000000000010 /* PortableBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortableBackup.swift; sourceTree = "<group>"; };
 		B10000000000000000000011 /* BackupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupView.swift; sourceTree = "<group>"; };
+		B10000000000000000000012 /* CBRCurrencyRates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CBRCurrencyRates.swift; sourceTree = "<group>"; };
+		B10000000000000000000013 /* CurrencyConverterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyConverterView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,8 +75,8 @@
 		};
 		D10000000000000000000003 /* Products */ = {isa = PBXGroup; children = (B1000000000000000000000E /* EuroAuto.app */,); name = Products; sourceTree = "<group>"; };
 		D10000000000000000000004 /* Models */ = {isa = PBXGroup; children = (B10000000000000000000002 /* Vehicle.swift */,); path = Models; sourceTree = "<group>"; };
-		D10000000000000000000005 /* Services */ = {isa = PBXGroup; children = (B10000000000000000000003 /* VehicleCatalog.swift */, B10000000000000000000004 /* VehicleDocumentStore.swift */, B10000000000000000000010 /* PortableBackup.swift */,); path = Services; sourceTree = "<group>"; };
-		D10000000000000000000006 /* Views */ = {isa = PBXGroup; children = (B10000000000000000000005 /* ContentView.swift */, B10000000000000000000006 /* DashboardView.swift */, B10000000000000000000007 /* VehiclesView.swift */, B10000000000000000000008 /* VehicleEditorView.swift */, B10000000000000000000009 /* VehicleDetailView.swift */, B1000000000000000000000A /* CustomersView.swift */, B10000000000000000000011 /* BackupView.swift */,); path = Views; sourceTree = "<group>"; };
+		D10000000000000000000005 /* Services */ = {isa = PBXGroup; children = (B10000000000000000000003 /* VehicleCatalog.swift */, B10000000000000000000004 /* VehicleDocumentStore.swift */, B10000000000000000000010 /* PortableBackup.swift */, B10000000000000000000012 /* CBRCurrencyRates.swift */,); path = Services; sourceTree = "<group>"; };
+		D10000000000000000000006 /* Views */ = {isa = PBXGroup; children = (B10000000000000000000005 /* ContentView.swift */, B10000000000000000000006 /* DashboardView.swift */, B10000000000000000000007 /* VehiclesView.swift */, B10000000000000000000008 /* VehicleEditorView.swift */, B10000000000000000000009 /* VehicleDetailView.swift */, B1000000000000000000000A /* CustomersView.swift */, B10000000000000000000011 /* BackupView.swift */, B10000000000000000000013 /* CurrencyConverterView.swift */,); path = Views; sourceTree = "<group>"; };
 		D10000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (B1000000000000000000000B /* vehicle-catalog.json */, B1000000000000000000000F /* VEHICLE-CATALOG-SOURCE.md */,); path = Resources; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -125,6 +129,8 @@
 			A1000000000000000000000A /* CustomersView.swift in Sources */,
 			A1000000000000000000000D /* PortableBackup.swift in Sources */,
 			A1000000000000000000000E /* BackupView.swift in Sources */,
+			A1000000000000000000000F /* CBRCurrencyRates.swift in Sources */,
+			A10000000000000000000010 /* CurrencyConverterView.swift in Sources */,
 		); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
