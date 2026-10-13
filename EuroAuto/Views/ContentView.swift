@@ -25,18 +25,28 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Nord Auto")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
+                HStack(spacing: 11) {
+                    Image(systemName: "steeringwheel")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.euroGreen)
+                        .frame(width: 38, height: 38)
+                        .background(Color.euroGreen.opacity(0.13), in: RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("NORD AUTO").font(.system(size: 13, weight: .bold, design: .rounded)).tracking(1.1)
+                        Text("УЧЁТ АВТОМОБИЛЕЙ").font(.system(size: 8, weight: .semibold)).tracking(1).foregroundStyle(.tertiary)
+                    }
+                    .foregroundStyle(Color.euroInk)
+                }
+                .padding(.horizontal, 10)
+                .padding(.top, 14)
+                .padding(.bottom, 18)
 
                 ForEach([AppSection.overview, .vehicles, .customers]) { section in
                     SidebarButton(section: section, selection: $selection)
                 }
 
-                Text("Данные")
-                    .font(.caption.weight(.semibold))
+                Text("СИСТЕМА")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
                     .padding(.top, 14)
@@ -85,10 +95,13 @@ private struct SidebarButton: View {
             Label(section.rawValue, systemImage: section.symbol)
                 .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? Color.euroGreen : Color.euroInk)
-                .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
-                .padding(.horizontal, 10)
-                .background(isSelected ? Color.euroGreen.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 9))
-                .contentShape(RoundedRectangle(cornerRadius: 9))
+                .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                .padding(.horizontal, 12)
+                .background(isSelected ? Color.euroGreen.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(alignment: .leading) {
+                    if isSelected { Capsule().fill(Color.euroGreen).frame(width: 3, height: 20).padding(.leading, 1) }
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
