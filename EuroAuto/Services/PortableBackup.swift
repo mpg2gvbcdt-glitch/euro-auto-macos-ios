@@ -45,7 +45,11 @@ struct BackupVehicle: Codable {
     var purchasePrice: Double
     var fxRate: Double
     var deliveryCost: Double
+    var deliveryCurrency: String?
+    var deliveryFxRate: Double?
     var freightCost: Double
+    var freightCurrency: String?
+    var freightFxRate: Double?
     var customsDuty: Double
     var customsFees: Double
     var recyclingFee: Double
@@ -117,7 +121,9 @@ enum PortableBackupService {
                     vehicleHeightMm: vehicle.vehicleHeightMm, wheelbaseMm: vehicle.wheelbaseMm, curbWeightKg: vehicle.curbWeightKg,
                     specSource: vehicle.specSource, originCountry: vehicle.originCountry, purchaseDate: day(vehicle.purchaseDate),
                     supplierInvoice: vehicle.supplierInvoice, currency: vehicle.currency, purchasePrice: vehicle.purchasePrice,
-                    fxRate: vehicle.fxRate, deliveryCost: vehicle.deliveryCost, freightCost: vehicle.freightCost,
+                    fxRate: vehicle.fxRate, deliveryCost: vehicle.deliveryCost,
+                    deliveryCurrency: vehicle.deliveryCurrency, deliveryFxRate: vehicle.deliveryFxRate,
+                    freightCost: vehicle.freightCost, freightCurrency: vehicle.freightCurrency, freightFxRate: vehicle.freightFxRate,
                     customsDuty: vehicle.customsDuty, customsFees: vehicle.customsFees, recyclingFee: vehicle.recyclingFee,
                     certificationCost: vehicle.certificationCost, registrationCost: vehicle.registrationCost, otherCosts: vehicle.otherCosts,
                     importType: vehicle.importType, customerCode: vehicle.customer?.code, orderDate: day(vehicle.orderDate),
@@ -192,7 +198,9 @@ enum PortableBackupService {
             vehicle.wheelbaseMm = item.wheelbaseMm; vehicle.curbWeightKg = item.curbWeightKg; vehicle.specSource = item.specSource
             vehicle.originCountry = item.originCountry; vehicle.purchaseDate = parseDay(item.purchaseDate); vehicle.supplierInvoice = item.supplierInvoice
             vehicle.currency = item.currency; vehicle.purchasePrice = item.purchasePrice; vehicle.fxRate = item.fxRate
-            vehicle.deliveryCost = item.deliveryCost; vehicle.freightCost = item.freightCost; vehicle.customsDuty = item.customsDuty
+            vehicle.deliveryCost = item.deliveryCost; vehicle.deliveryCurrency = item.deliveryCurrency; vehicle.deliveryFxRate = item.deliveryFxRate
+            vehicle.freightCost = item.freightCost; vehicle.freightCurrency = item.freightCurrency; vehicle.freightFxRate = item.freightFxRate
+            vehicle.customsDuty = item.customsDuty
             vehicle.customsFees = item.customsFees; vehicle.recyclingFee = item.recyclingFee; vehicle.certificationCost = item.certificationCost
             vehicle.registrationCost = item.registrationCost; vehicle.otherCosts = item.otherCosts; vehicle.importType = item.importType
             vehicle.customer = item.customerCode.flatMap { customersByCode[$0.uppercased()] }

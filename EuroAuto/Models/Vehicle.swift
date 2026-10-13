@@ -67,7 +67,11 @@ final class Vehicle {
     var currency: String
     var fxRate: Double
     var deliveryCost: Double
+    var deliveryCurrency: String?
+    var deliveryFxRate: Double?
     var freightCost: Double
+    var freightCurrency: String?
+    var freightFxRate: Double?
     var customsDuty: Double
     var customsFees: Double
     var recyclingFee: Double
@@ -121,7 +125,11 @@ final class Vehicle {
         self.currency = "EUR"
         self.fxRate = 1
         self.deliveryCost = 0
+        self.deliveryCurrency = "EUR"
+        self.deliveryFxRate = 1
         self.freightCost = 0
+        self.freightCurrency = "EUR"
+        self.freightFxRate = 1
         self.customsDuty = 0
         self.customsFees = 0
         self.recyclingFee = 0
@@ -134,8 +142,12 @@ final class Vehicle {
         self.updatedAt = .now
     }
 
+    var deliveryCostRUB: Double { deliveryCost * (deliveryFxRate ?? 1) }
+    var freightCostRUB: Double { freightCost * (freightFxRate ?? 1) }
+
     var totalCost: Double {
-        purchasePrice * fxRate + deliveryCost + freightCost + customsDuty + customsFees
+        purchasePrice * fxRate + deliveryCostRUB + freightCostRUB
+            + customsDuty + customsFees
             + recyclingFee + certificationCost + registrationCost + otherCosts
     }
 

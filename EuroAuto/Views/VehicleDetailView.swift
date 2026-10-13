@@ -95,8 +95,9 @@ struct VehicleDetailView: View {
 
                 GroupBox("Расходы") {
                     VStack(spacing: 0) {
-                        costRow("Покупка", value: vehicle.purchasePrice * vehicle.fxRate)
-                        costRow("Доставка и фрахт", value: vehicle.deliveryCost + vehicle.freightCost)
+                        costRow("Покупка · \(vehicle.currency)", value: vehicle.purchasePrice * vehicle.fxRate)
+                        costRow("Доставка до порта · \(vehicle.deliveryCurrency ?? "RUB")", value: vehicle.deliveryCostRUB)
+                        costRow("Фрахт · \(vehicle.freightCurrency ?? "RUB")", value: vehicle.freightCostRUB)
                         costRow("Таможня", value: vehicle.customsDuty + vehicle.customsFees + vehicle.recyclingFee)
                         costRow("Оформление и прочее", value: vehicle.certificationCost + vehicle.registrationCost + vehicle.otherCosts)
                         if vehicle.prepayment > 0 { costRow("Предоплата", value: vehicle.prepayment) }

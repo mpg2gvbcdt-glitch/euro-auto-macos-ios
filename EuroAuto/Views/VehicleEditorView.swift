@@ -111,7 +111,17 @@ struct VehicleEditorView: View {
                         }
                     }
                     moneyField("Цена покупки, \(vehicle.currency)", value: $vehicle.purchasePrice)
-                    moneyField("Курс, ₽ за 1 \(vehicle.currency)", value: $vehicle.fxRate)
+                    moneyField("Курс покупки, ₽ за 1 \(vehicle.currency)", value: $vehicle.fxRate)
+                    Picker("Валюта доставки до порта", selection: deliveryCurrencyBinding) {
+                        ForEach(currencyOptions, id: \.self) { currency in Text(currency).tag(currency) }
+                    }
+                    moneyField("Доставка до порта, \(vehicle.deliveryCurrency ?? "RUB")", value: $vehicle.deliveryCost)
+                    moneyField("Курс доставки, ₽ за 1 \(vehicle.deliveryCurrency ?? "RUB")", value: deliveryFxRateBinding)
+                    Picker("Валюта фрахта", selection: freightCurrencyBinding) {
+                        ForEach(currencyOptions, id: \.self) { currency in Text(currency).tag(currency) }
+                    }
+                    moneyField("Фрахт, \(vehicle.freightCurrency ?? "RUB")", value: $vehicle.freightCost)
+                    moneyField("Курс фрахта, ₽ за 1 \(vehicle.freightCurrency ?? "RUB")", value: freightFxRateBinding)
                     Button {
                         Task { await loadCBRRate() }
                     } label: {
@@ -126,9 +136,7 @@ struct VehicleEditorView: View {
                             .font(.footnote)
                             .foregroundStyle(cbrRateMessageIsError ? Color.euroAmber : Color.euroGreen)
                     }
-                    moneyField("Доставка до порта, ₽", value: $vehicle.deliveryCost)
-                    moneyField("Фрахт, ₽", value: $vehicle.freightCost)
-                    Text("Таможенные и прочие расходы ниже указываются в рублях. Себестоимость считается в ₽ по формуле: цена покупки × курс + расходы.")
+                    Text("Покупка, доставка до порта и фрахт вводятся в выбранных валютах и пересчитываются в рубли по своим курсам. Таможенные и прочие расходы ниже указываются в рублях.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -209,6 +217,24 @@ struct VehicleEditorView: View {
         Binding(get: { vehicle.orderDate ?? .now }, set: { vehicle.orderDate = $0 })
     }
 
+    private let currencyOptions = ["EUR", "USD", "GBP", "CHF", "SEK", "NOK", "DKK", "PLN", "RUB"]
+
+    private var deliveryCurrencyBinding: Binding<String> {
+        Binding(get: { vehicle.deliveryCurrency ?? "RUB" }, set: { vehicle.deliveryCurrency = $0 })
+    }
+
+    private var deliveryFxRateBinding: Binding<Double> {
+        Binding(get: { vehicle.deliveryFxRate ?? 1 }, set: { vehicle.deliveryFxRate = $0 })
+    }
+
+    private var freightCurrencyBinding: Binding<String> {
+        Binding(get: { vehicle.freightCurrency ?? "RUB" }, set: { vehicle.freightCurrency = $0 })
+    }
+
+    private var freightFxRateBinding: Binding<Double> {
+        Binding(get: { vehicle.freightFxRate ?? 1 }, set: { vehicle.freightFxRate = $0 })
+    }
+
     private var selectedGeneration: CatalogGeneration? {
         catalog.generations(for: vehicle.make, model: vehicle.model).first { $0.n == vehicle.generation }
     }
@@ -236,14 +262,28 @@ struct VehicleEditorView: View {
         defer { isLoadingCBRRate = false }
         do {
             let snapshot = try await CBRCurrencyRatesService.fetchRates(for: vehicle.purchaseDate ?? .now)
-            guard let rate = snapshot.ratesToRuble[vehicle.currency] else {
+            let selectedCurrencies = Set([vehicle.currency, deliveryCurrencyBinding.wrappedValue, freightCurrencyBinding.wrappedValue])
+            var rates: [String: Double] = [:]
+            var missingCurrencies: [String] = []
+            for currency in selectedCurrencies {
+                if currency == "RUB" {
+                    rates[currency] = 1
+                } else if let rate = snapshot.ratesToRuble[currency] {
+                    rates[currency] = rate
+                } else {
+                    missingCurrencies.append(currency)
+                }
+            }
+            guard missingCurrencies.isEmpty else {
                 cbrRateMessageIsError = true
-                cbrRateMessage = "В ответе Банка России нет курса \(vehicle.currency)."
+                cbrRateMessage = "В ответе Банка России нет курса: \(missingCurrencies.sorted().joined(separator: ", "))."
                 return
             }
-            vehicle.fxRate = rate
+            vehicle.fxRate = rates[vehicle.currency] ?? 1
+            vehicle.deliveryFxRate = rates[deliveryCurrencyBinding.wrappedValue] ?? 1
+            vehicle.freightFxRate = rates[freightCurrencyBinding.wrappedValue] ?? 1
             cbrRateMessageIsError = false
-            cbrRateMessage = "Установлен курс \(rate.formatted(.number.precision(.fractionLength(2...4)))) ₽ на \(snapshot.officialDate.formatted(date: .numeric, time: .omitted))."
+            cbrRateMessage = "Подставлены курсы ЦБ на \(snapshot.officialDate.formatted(date: .numeric, time: .omitted))."
         } catch {
             cbrRateMessageIsError = true
             cbrRateMessage = "Не удалось получить курс ЦБ: \(error.localizedDescription)"
