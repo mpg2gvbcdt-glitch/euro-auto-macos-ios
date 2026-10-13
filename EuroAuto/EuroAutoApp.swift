@@ -20,6 +20,7 @@ struct EuroAutoApp: App {
             ContentView()
                 .modelContainer(container)
                 .tint(Color.euroGreen)
+                .preferredColorScheme(.dark)
         }
         #if os(macOS)
         .windowResizability(.contentSize)
@@ -29,8 +30,11 @@ struct EuroAutoApp: App {
 }
 
 extension Color {
-    static let euroGreen = Color(red: 0.17, green: 0.38, blue: 0.31)
-    static let euroInk = Color(red: 0.12, green: 0.17, blue: 0.16)
-    static let euroCanvas = Color(red: 0.96, green: 0.97, blue: 0.95)
-    static let euroAmber = Color(red: 0.76, green: 0.50, blue: 0.20)
+    static let euroGreen = Color(red: 0.43, green: 0.82, blue: 0.64)
+    static let euroInk = Color(red: 0.91, green: 0.94, blue: 0.92)
+    static let euroCanvas = Color(red: 0.055, green: 0.071, blue: 0.067)
+    static let euroPanel = Color(red: 0.092, green: 0.115, blue: 0.107)
+    static let euroPanelRaised = Color(red: 0.125, green: 0.153, blue: 0.141)
+    static let euroLine = Color(red: 0.19, green: 0.24, blue: 0.22)
+    static let euroAmber = Color(red: 0.94, green: 0.69, blue: 0.36)
 }
