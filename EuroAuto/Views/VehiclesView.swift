@@ -2,10 +2,10 @@ import SwiftData
 import SwiftUI
 
 struct VehiclesView: View {
+    @Binding var showingNewVehicle: Bool
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Vehicle.updatedAt, order: .reverse) private var vehicles: [Vehicle]
     @State private var searchText = ""
-    @State private var showingNewVehicle = false
     @State private var importFilter = "Все"
 
     private let filters = ["Все", "На склад", "Под заказ"]
