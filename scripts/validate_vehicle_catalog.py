@@ -11,7 +11,11 @@ envelope = json.loads(path.read_text(encoding="utf-8"))
 if envelope.get("encoding") != "deflate-base64":
     raise SystemExit(f"Unexpected catalog encoding in {path}")
 
-catalog_bytes = zlib.decompress(base64.b64decode(envelope["data"], validate=True))
+compressed = base64.b64decode(envelope["data"], validate=True)
+try:
+    catalog_bytes = zlib.decompress(compressed, wbits=-15)
+except zlib.error:
+    catalog_bytes = zlib.decompress(compressed)
 if len(catalog_bytes) != envelope.get("uncompressedBytes"):
     raise SystemExit("Catalog length does not match its header")
 catalog = json.loads(catalog_bytes)
