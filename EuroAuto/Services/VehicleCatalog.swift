@@ -38,6 +38,26 @@ struct CatalogEngine: Decodable, Identifiable {
     let kg: Int?
     var id: String { n }
 
+    private enum CodingKeys: String, CodingKey {
+        case n, f, cy, cc, hp, dr, tr, l, w, h, wb, kg
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        n = try values.decode(String.self, forKey: .n)
+        f = try values.decodeIfPresent(String.self, forKey: .f)
+        cy = try values.decodeCatalogInteger(forKey: .cy)
+        cc = try values.decodeCatalogInteger(forKey: .cc)
+        hp = try values.decodeCatalogInteger(forKey: .hp)
+        dr = try values.decodeIfPresent(String.self, forKey: .dr)
+        tr = try values.decodeIfPresent(String.self, forKey: .tr)
+        l = try values.decodeCatalogInteger(forKey: .l)
+        w = try values.decodeCatalogInteger(forKey: .w)
+        h = try values.decodeCatalogInteger(forKey: .h)
+        wb = try values.decodeCatalogInteger(forKey: .wb)
+        kg = try values.decodeCatalogInteger(forKey: .kg)
+    }
+
     var localizedFuel: String {
         switch (f ?? "").lowercased() {
         case "gasoline", "petrol": "Бензин"
@@ -55,6 +75,26 @@ struct CatalogEngine: Decodable, Identifiable {
         case "all wheel drive", "four wheel drive": "Полный"
         default: dr ?? ""
         }
+    }
+}
+
+private extension KeyedDecodingContainer {
+    func decodeCatalogInteger(forKey key: Key) throws -> Int? {
+        guard contains(key) else { return nil }
+        if try decodeNil(forKey: key) { return nil }
+        if let integer = try? decode(Int.self, forKey: key) { return integer }
+
+        let number = try decode(Double.self, forKey: key)
+        guard number.isFinite,
+              number >= Double(Int.min),
+              number <= Double(Int.max) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: key,
+                in: self,
+                debugDescription: "Catalog value must be a finite number within the Int range."
+            )
+        }
+        return Int(number.rounded())
     }
 }
 
