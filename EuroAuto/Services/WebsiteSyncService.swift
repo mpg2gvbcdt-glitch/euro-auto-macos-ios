@@ -189,6 +189,7 @@ private struct RemoteDocument: Decodable {
 }
 
 private struct NativeVehicleMetadata: Codable {
+    var localID: String?
     var generation: String
     var engine: String
     var deliveryCurrency: String?
@@ -233,7 +234,11 @@ enum WebsiteSyncService {
     static func forgetPassword() throws { try WebsiteSyncKeyStore.delete() }
 
     static func markVehicleDeleted(vin: String) {
-        SyncTombstones.add(vin: vin)
+        SyncTombstones.add(vin: vin, localID: nil)
+    }
+
+    static func markVehicleDeleted(vin: String, localID: UUID) {
+        SyncTombstones.add(vin: vin, localID: localID)
     }
 
     static func markCustomerDeleted(code: String) {
@@ -298,13 +303,17 @@ enum WebsiteSyncService {
         remoteCars = try await request(CarsReply.self, base: base, path: "/api/cars")
         var localCars = try context.fetch(FetchDescriptor<Vehicle>())
         var localCarsByVIN = Dictionary(localCars.filter { !$0.vin.isEmpty }.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
-        var remoteCarsByVIN = Dictionary(remoteCars.cars.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
+        var remoteCarsByVIN = Dictionary(remoteCars.cars.filter { !$0.vin.isEmpty }.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
+        var remoteCarsByLocalID = Dictionary(remoteCars.cars.compactMap { car -> (String, RemoteVehicle)? in
+            guard let id = car.nativeMetadata?.localID?.uppercased(), !id.isEmpty else { return nil }
+            return (id, car)
+        }, uniquingKeysWith: { first, _ in first })
 
-        report.skippedVehiclesWithoutVIN = localCars.filter { $0.vin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
-        for local in localCars where !local.vin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            let key = local.vin.uppercased()
+        for local in localCars {
+            let key = local.id.uuidString.uppercased()
             let customerID = local.customer.flatMap { remoteCustomersByCode[$0.code.uppercased()]?.id }
-            if let remote = remoteCarsByVIN[key] {
+            let remote = remoteCarsByLocalID[key] ?? (local.vin.isEmpty ? nil : remoteCarsByVIN[local.vin.uppercased()])
+            if let remote {
                 if local.updatedAt > (parseDate(remote.updatedAt) ?? .distantPast) {
                     let payload = vehiclePayload(local, customerID: customerID, expectedUpdatedAt: remote.updatedAt)
                     let updated = try await request(CarReply.self, base: base, path: "/api/cars?id=\(remote.id)", method: "PATCH", body: JSONEncoder().encode(payload))
@@ -323,19 +332,34 @@ enum WebsiteSyncService {
         }
 
         remoteCars = try await request(CarsReply.self, base: base, path: "/api/cars")
-        remoteCarsByVIN = Dictionary(remoteCars.cars.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
+        remoteCarsByVIN = Dictionary(remoteCars.cars.filter { !$0.vin.isEmpty }.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
+        remoteCarsByLocalID = Dictionary(remoteCars.cars.compactMap { car -> (String, RemoteVehicle)? in
+            guard let id = car.nativeMetadata?.localID?.uppercased(), !id.isEmpty else { return nil }
+            return (id, car)
+        }, uniquingKeysWith: { first, _ in first })
         localCars = try context.fetch(FetchDescriptor<Vehicle>())
         localCarsByVIN = Dictionary(localCars.filter { !$0.vin.isEmpty }.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
+        let localCarsByID = Dictionary(localCars.map { ($0.id.uuidString.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
         let customersByID = Dictionary(uniqueKeysWithValues: remoteCustomers.customers.map { ($0.id, $0) })
-        for remote in remoteCars.cars where localCarsByVIN[remote.vin.uppercased()] == nil {
+        for remote in remoteCars.cars where localCarsByID[remote.nativeMetadata?.localID?.uppercased() ?? ""] == nil && (remote.vin.isEmpty || localCarsByVIN[remote.vin.uppercased()] == nil) {
             let vehicle = Vehicle(vin: remote.vin, make: remote.make, model: remote.model)
+            if let id = remote.nativeMetadata?.localID.flatMap(UUID.init(uuidString:)) { vehicle.id = id }
             apply(remote, to: vehicle, customersByID: customersByID, localCustomers: localCustomersByCode)
             context.insert(vehicle)
-            localCarsByVIN[remote.vin.uppercased()] = vehicle
+            if !remote.vin.isEmpty { localCarsByVIN[remote.vin.uppercased()] = vehicle }
             report.downloadedVehicles += 1
         }
 
-        try await synchronizeDocuments(base: base, context: context, localVehiclesByVIN: localCarsByVIN, remoteCarsByVIN: remoteCarsByVIN, report: &report)
+        let syncedLocalCars = try context.fetch(FetchDescriptor<Vehicle>())
+        let syncedCarsByID = Dictionary(syncedLocalCars.map { ($0.id.uuidString.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
+        let syncedCarsByVIN = Dictionary(syncedLocalCars.filter { !$0.vin.isEmpty }.map { ($0.vin.uppercased(), $0) }, uniquingKeysWith: { first, _ in first })
+        var localVehiclesByRemoteID: [Int: Vehicle] = [:]
+        for remote in remoteCars.cars {
+            let local = remote.nativeMetadata?.localID.flatMap { syncedCarsByID[$0.uppercased()] }
+                ?? (remote.vin.isEmpty ? nil : syncedCarsByVIN[remote.vin.uppercased()])
+            if let local { localVehiclesByRemoteID[remote.id] = local }
+        }
+        try await synchronizeDocuments(base: base, context: context, localVehiclesByRemoteID: localVehiclesByRemoteID, report: &report)
         do { try context.save() }
         catch { context.rollback(); throw error }
         return report
@@ -348,15 +372,23 @@ enum WebsiteSyncService {
             report.deletedDocuments += 1
         }
 
-        for vin in SyncTombstones.vehicleVINs {
-            guard let index = remoteCars.cars.firstIndex(where: { $0.vin.uppercased() == vin }) else {
-                SyncTombstones.remove(vin: vin)
+        for identifier in SyncTombstones.vehicleIdentifiers {
+            let index: Int?
+            if identifier.hasPrefix("ID:") {
+                let localID = String(identifier.dropFirst(3)).uppercased()
+                index = remoteCars.cars.firstIndex(where: { $0.nativeMetadata?.localID?.uppercased() == localID })
+            } else {
+                let vin = identifier.hasPrefix("VIN:") ? String(identifier.dropFirst(4)) : identifier
+                index = remoteCars.cars.firstIndex(where: { $0.vin.uppercased() == vin })
+            }
+            guard let index else {
+                SyncTombstones.removeVehicle(identifier: identifier)
                 continue
             }
             let remote = remoteCars.cars[index]
             _ = try await request(OperationReply.self, base: base, path: "/api/cars?id=\(remote.id)", method: "DELETE")
             remoteCars.cars.remove(at: index)
-            SyncTombstones.remove(vin: vin)
+            SyncTombstones.removeVehicle(identifier: identifier)
             report.deletedVehicles += 1
         }
 
@@ -449,7 +481,7 @@ enum WebsiteSyncService {
                        vehicleLengthMm: car.vehicleLengthMm, vehicleWidthMm: car.vehicleWidthMm, vehicleHeightMm: car.vehicleHeightMm,
                        wheelbaseMm: car.wheelbaseMm, curbWeightKg: car.curbWeightKg, specSource: car.specSource,
                        importerType: car.importerType, importRoute: car.importRoute,
-                       nativeMetadata: NativeVehicleMetadata(generation: car.generation, engine: car.engine,
+                       nativeMetadata: NativeVehicleMetadata(localID: car.id.uuidString, generation: car.generation, engine: car.engine,
                                                              deliveryCurrency: car.deliveryCurrency, deliveryFxRate: car.deliveryFxRate,
                                                              freightCurrency: car.freightCurrency, freightFxRate: car.freightFxRate),
                        expectedUpdatedAt: expectedUpdatedAt)
@@ -471,7 +503,7 @@ enum WebsiteSyncService {
                        vehicleLengthMm: car.vehicleLengthMm, vehicleWidthMm: car.vehicleWidthMm, vehicleHeightMm: car.vehicleHeightMm,
                        wheelbaseMm: car.wheelbaseMm, curbWeightKg: car.curbWeightKg, specSource: car.specSource,
                        importerType: car.importerType, importRoute: car.importRoute,
-                       nativeMetadata: car.nativeMetadata ?? NativeVehicleMetadata(generation: "", engine: ""),
+                       nativeMetadata: car.nativeMetadata ?? NativeVehicleMetadata(localID: nil, generation: "", engine: ""),
                        expectedUpdatedAt: expectedUpdatedAt)
     }
 
@@ -513,10 +545,9 @@ enum WebsiteSyncService {
         local.updatedAt = parseDate(remote.updatedAt) ?? .now
     }
 
-    private static func synchronizeDocuments(base: URL, context: ModelContext, localVehiclesByVIN: [String: Vehicle], remoteCarsByVIN: [String: RemoteVehicle], report: inout WebsiteSyncReport) async throws {
-        for (vin, vehicle) in localVehiclesByVIN {
-            guard let remoteCar = remoteCarsByVIN[vin] else { continue }
-            let reply = try await request(DocumentsReply.self, base: base, path: "/api/car-documents?carId=\(remoteCar.id)")
+    private static func synchronizeDocuments(base: URL, context: ModelContext, localVehiclesByRemoteID: [Int: Vehicle], report: inout WebsiteSyncReport) async throws {
+        for (remoteID, vehicle) in localVehiclesByRemoteID {
+            let reply = try await request(DocumentsReply.self, base: base, path: "/api/car-documents?carId=\(remoteID)")
             var localDocs = vehicle.documents ?? []
             for remote in reply.documents {
                 if localDocs.contains(where: { $0.remoteID == remote.id }) { continue }
@@ -538,7 +569,7 @@ enum WebsiteSyncService {
                 report.downloadedDocuments += 1
             }
             for document in localDocs where document.remoteID == nil {
-                let remote = try await upload(document, vehicleID: remoteCar.id, base: base)
+                let remote = try await upload(document, vehicleID: remoteID, base: base)
                 document.remoteID = remote.id
                 report.uploadedDocuments += 1
             }
@@ -635,12 +666,14 @@ private enum SyncTombstones {
     private static let customersKey = "11-35.sync.deletedCustomers"
     private static let documentsKey = "11-35.sync.deletedDocuments"
 
-    static var vehicleVINs: [String] { values(for: vehiclesKey) }
+    static var vehicleIdentifiers: [String] { values(for: vehiclesKey) }
     static var customerCodes: [String] { values(for: customersKey) }
     static var documentIDs: [Int] { UserDefaults.standard.array(forKey: documentsKey) as? [Int] ?? [] }
 
-    static func add(vin: String) {
-        add(vin, for: vehiclesKey)
+    static func add(vin: String, localID: UUID?) {
+        let cleanVIN = vin.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if !cleanVIN.isEmpty { add("VIN:\(cleanVIN)", for: vehiclesKey) }
+        else if let localID { add("ID:\(localID.uuidString.uppercased())", for: vehiclesKey) }
     }
 
     static func add(customerCode: String) {
@@ -648,7 +681,11 @@ private enum SyncTombstones {
     }
 
     static func remove(vin: String) {
-        remove(vin, for: vehiclesKey)
+        removeVehicle(identifier: "VIN:\(vin.uppercased())")
+    }
+
+    static func removeVehicle(identifier: String) {
+        remove(identifier, for: vehiclesKey)
     }
 
     static func remove(customerCode: String) {
