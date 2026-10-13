@@ -7,10 +7,12 @@ struct WebsiteSyncReport {
     var uploadedVehicles = 0
     var updatedVehicles = 0
     var downloadedVehicles = 0
+    var refreshedVehicles = 0
     var deletedVehicles = 0
     var uploadedCustomers = 0
     var updatedCustomers = 0
     var downloadedCustomers = 0
+    var refreshedCustomers = 0
     var deletedCustomers = 0
     var uploadedDocuments = 0
     var downloadedDocuments = 0
@@ -18,7 +20,7 @@ struct WebsiteSyncReport {
     var skippedVehiclesWithoutVIN = 0
 
     var summary: String {
-        "Автомобили: \(uploadedVehicles) новых отправлено, \(updatedVehicles) обновлено, \(downloadedVehicles) получено, \(deletedVehicles) удалено. Заказчики: \(uploadedCustomers) новых отправлено, \(updatedCustomers) обновлено, \(downloadedCustomers) получено, \(deletedCustomers) удалено. Документы: \(uploadedDocuments) отправлено, \(downloadedDocuments) получено, \(deletedDocuments) удалено."
+        "Автомобили: \(uploadedVehicles) новых отправлено, \(updatedVehicles) отправлено с изменениями, \(downloadedVehicles) новых получено, \(refreshedVehicles) обновлено с сайта, \(deletedVehicles) удалено. Заказчики: \(uploadedCustomers) новых отправлено, \(updatedCustomers) отправлено с изменениями, \(downloadedCustomers) новых получено, \(refreshedCustomers) обновлено с сайта, \(deletedCustomers) удалено. Документы: \(uploadedDocuments) отправлено, \(downloadedDocuments) получено, \(deletedDocuments) удалено."
             + (skippedVehiclesWithoutVIN > 0 ? " Пропущено машин без VIN: \(skippedVehiclesWithoutVIN)." : "")
     }
 }
@@ -272,6 +274,7 @@ enum WebsiteSyncService {
                     report.updatedCustomers += 1
                 } else {
                     apply(remote, to: local)
+                    report.refreshedCustomers += 1
                 }
             } else {
                 let created = try await request(CustomerReply.self, base: base, path: "/api/customers", method: "POST", body: JSONEncoder().encode(localPayload))
@@ -309,6 +312,7 @@ enum WebsiteSyncService {
                     report.updatedVehicles += 1
                 } else {
                     apply(remote, to: local, customersByID: Dictionary(uniqueKeysWithValues: remoteCustomers.customers.map { ($0.id, $0) }), localCustomers: localCustomersByCode)
+                    report.refreshedVehicles += 1
                 }
             } else {
                 let payload = vehiclePayload(local, customerID: customerID, expectedUpdatedAt: nil)
