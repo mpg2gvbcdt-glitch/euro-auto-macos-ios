@@ -199,6 +199,7 @@ private struct DetailMetric: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(.background, in: RoundedRectangle(cornerRadius: 15))
+                .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 15))
+                .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.euroLine.opacity(0.75), lineWidth: 1))
     }
 }
