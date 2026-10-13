@@ -21,6 +21,9 @@ jobs:
       - name: Validate vehicle catalog
         run: python3 scripts/validate_vehicle_catalog.py
 
+      - name: Test Apple catalog decompression
+        run: swift scripts/test_vehicle_catalog_decode.swift EuroAuto/Resources/vehicle-catalog.json
+
       - name: Build macOS app
         run: >-
           xcodebuild
