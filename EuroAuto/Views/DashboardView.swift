@@ -7,6 +7,7 @@ struct DashboardView: View {
 
     private var inTransit: Int { vehicles.filter { $0.vehicleStatus == "В пути" }.count }
     private var customerOrders: Int { vehicles.filter { $0.importType == "Под заказ" }.count }
+    private var importRequests: Int { vehicles.filter { $0.importType == "Заявка на пригон авто" }.count }
     private var portfolio: Double { vehicles.reduce(0) { $0 + $1.totalCost } }
 
     var body: some View {
@@ -30,6 +31,7 @@ struct DashboardView: View {
                     MetricCard(title: "Автомобилей", value: "\(vehicles.count)", symbol: "car.side.fill", tint: .euroGreen)
                     MetricCard(title: "В пути", value: "\(inTransit)", symbol: "shippingbox.fill", tint: .euroAmber)
                     MetricCard(title: "Заказных", value: "\(customerOrders)", symbol: "person.crop.rectangle.stack.fill", tint: .blue)
+                    MetricCard(title: "Заявки на пригон", value: "\(importRequests)", symbol: "doc.text.magnifyingglass", tint: .euroAmber)
                     MetricCard(title: "Вложено", value: portfolio.formatted(.currency(code: "RUB").locale(Locale(identifier: "ru_RU"))), symbol: "rublesign.circle.fill", tint: .purple)
                 }
 

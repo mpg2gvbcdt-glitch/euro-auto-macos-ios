@@ -66,8 +66,9 @@ struct VehicleEditorView: View {
                     Picker("Тип ввоза", selection: $vehicle.importType) {
                         Text("На склад").tag("На склад")
                         Text("Под заказ").tag("Под заказ")
+                        Text("Заявка на пригон авто").tag("Заявка на пригон авто")
                     }
-                    if vehicle.importType == "Под заказ" {
+                    if vehicle.importType != "На склад" {
                         Picker("Заказчик", selection: customerSelection) {
                             Text("Не выбран").tag("")
                             ForEach(customers) { customer in Text("\(customer.code) · \(customer.name)").tag(customer.id.uuidString) }
@@ -156,7 +157,7 @@ struct VehicleEditorView: View {
                     Picker("Статус заказа", selection: $vehicle.orderStatus) {
                         ForEach(["Новая заявка", "Подтвержден", "Ожидает оплату", "Ожидает автомобиль", "Автомобиль доставлен", "Закрыт", "Отменен"], id: \.self) { Text($0).tag($0) }
                     }
-                    if vehicle.importType == "Под заказ" {
+                    if vehicle.importType != "На склад" {
                         DatePicker("Дата заказа", selection: orderDateBinding, displayedComponents: .date)
                         TextField("Договор с клиентом", text: $vehicle.clientContract)
                     }

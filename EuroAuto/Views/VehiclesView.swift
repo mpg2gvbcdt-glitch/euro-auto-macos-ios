@@ -11,7 +11,7 @@ struct VehiclesView: View {
     @State private var showingDeleteConfirmation = false
     @State private var deleteError: String?
 
-    private let filters = ["Все", "На склад", "Под заказ"]
+    private let filters = ["Все", "На склад", "Под заказ", "Заявка на пригон авто"]
     private var filtered: [Vehicle] {
         vehicles.filter { vehicle in
             let matchesFilter = importFilter == "Все" || vehicle.importType == importFilter
@@ -41,10 +41,10 @@ struct VehiclesView: View {
             .padding(.top, 22)
 
             HStack {
-                Picker("Тип", selection: $importFilter) {
+                Picker("Тип: \(importFilter)", selection: $importFilter) {
                     ForEach(filters, id: \.self) { Text($0).tag($0) }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
                 .frame(maxWidth: 420)
                 Spacer(minLength: 0)
             }
