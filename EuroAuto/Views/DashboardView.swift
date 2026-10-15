@@ -109,11 +109,6 @@ private struct SeriesShowcase: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "car.side.fill")
-                    .font(.system(size: 39, weight: .regular))
-                    .foregroundStyle(Color.euroGreen.opacity(0.75))
-                    .padding(.top, 5)
-                    .accessibilityHidden(true)
             }
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 9)], spacing: 9) {
@@ -143,7 +138,23 @@ private struct SeriesShowcase: View {
             }
         }
         .padding(16)
-        .background(Color.euroPanel, in: RoundedRectangle(cornerRadius: 18))
+        .background {
+            GeometryReader { proxy in
+                Image("garage-lineup")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .clipped()
+                    .overlay {
+                        LinearGradient(
+                            colors: [Color.euroPanel.opacity(0.97), Color.euroPanel.opacity(0.84), Color.euroPanel.opacity(0.48)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+        }
         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.euroLine.opacity(0.8), lineWidth: 1))
         .accessibilityElement(children: .contain)
     }

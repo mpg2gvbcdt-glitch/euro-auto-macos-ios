@@ -28,6 +28,7 @@
 		A10000000000000000000014 /* CalcusCustomsCalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* CalcusCustomsCalculatorView.swift */; };
 		A10000000000000000000015 /* WebsiteSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* WebsiteSyncService.swift */; };
 		A10000000000000000000016 /* WebsiteSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* WebsiteSyncView.swift */; };
+		A10000000000000000000020 /* garage-lineup.jpg in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001A /* garage-lineup.jpg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		B10000000000000000000017 /* CalcusCustomsCalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcusCustomsCalculatorView.swift; sourceTree = "<group>"; };
 		B10000000000000000000018 /* WebsiteSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteSyncService.swift; sourceTree = "<group>"; };
 		B10000000000000000000019 /* WebsiteSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteSyncView.swift; sourceTree = "<group>"; };
+		B1000000000000000000001A /* garage-lineup.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "garage-lineup.jpg"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,7 +91,7 @@
 		D10000000000000000000004 /* Models */ = {isa = PBXGroup; children = (B10000000000000000000002 /* Vehicle.swift */,); path = Models; sourceTree = "<group>"; };
 		D10000000000000000000005 /* Services */ = {isa = PBXGroup; children = (B10000000000000000000003 /* VehicleCatalog.swift */, B10000000000000000000004 /* VehicleDocumentStore.swift */, B10000000000000000000010 /* PortableBackup.swift */, B10000000000000000000012 /* CBRCurrencyRates.swift */, B10000000000000000000014 /* CalcusKeyStore.swift */, B10000000000000000000016 /* CalcusCustomsService.swift */, B10000000000000000000018 /* WebsiteSyncService.swift */,); path = Services; sourceTree = "<group>"; };
 		D10000000000000000000006 /* Views */ = {isa = PBXGroup; children = (B10000000000000000000005 /* ContentView.swift */, B10000000000000000000006 /* DashboardView.swift */, B10000000000000000000007 /* VehiclesView.swift */, B10000000000000000000008 /* VehicleEditorView.swift */, B10000000000000000000009 /* VehicleDetailView.swift */, B1000000000000000000000A /* CustomersView.swift */, B10000000000000000000011 /* BackupView.swift */, B10000000000000000000013 /* CurrencyConverterView.swift */, B10000000000000000000015 /* CalcusSettingsView.swift */, B10000000000000000000017 /* CalcusCustomsCalculatorView.swift */, B10000000000000000000019 /* WebsiteSyncView.swift */,); path = Views; sourceTree = "<group>"; };
-		D10000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (B1000000000000000000000B /* vehicle-catalog.json */, B1000000000000000000000F /* VEHICLE-CATALOG-SOURCE.md */,); path = Resources; sourceTree = "<group>"; };
+		D10000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (B1000000000000000000000B /* vehicle-catalog.json */, B1000000000000000000000F /* VEHICLE-CATALOG-SOURCE.md */, B1000000000000000000001A /* garage-lineup.jpg */,); path = Resources; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -124,7 +126,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C10000000000000000000003 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000B /* vehicle-catalog.json in Resources */, A1000000000000000000000C /* VEHICLE-CATALOG-SOURCE.md in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000003 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A1000000000000000000000B /* vehicle-catalog.json in Resources */, A1000000000000000000000C /* VEHICLE-CATALOG-SOURCE.md in Resources */, A10000000000000000000020 /* garage-lineup.jpg in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
