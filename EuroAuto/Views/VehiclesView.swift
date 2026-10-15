@@ -3,14 +3,22 @@ import SwiftUI
 
 struct VehiclesView: View {
     @Binding var showingNewVehicle: Bool
+    let initialFilter: String
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Vehicle.updatedAt, order: .reverse) private var vehicles: [Vehicle]
     @State private var searchText = ""
-    @State private var importFilter = "Все"
+    @State private var importFilter: String
     @State private var vehicleToDelete: Vehicle?
     @State private var showingDeleteConfirmation = false
     @State private var deleteError: String?
 
+    init(showingNewVehicle: Binding<Bool>, initialFilter: String = "Все") {
+        self._showingNewVehicle = showingNewVehicle
+        self.initialFilter = initialFilter
+        self._importFilter = State(initialValue: initialFilter)
+    }
+
+    private var isRequestsView: Bool { initialFilter == "Заявка на пригон авто" }
     private let filters = ["Все", "На склад", "Под заказ", "Заявка на пригон авто"]
     private var filtered: [Vehicle] {
         vehicles.filter { vehicle in
@@ -83,7 +91,8 @@ struct VehiclesView: View {
             }
         }
         .background(Color.euroCanvas)
-        .navigationTitle("Автомобили")
+        .navigationTitle(isRequestsView ? "Заявки на пригон" : "Автомобили")
+        .onChange(of: initialFilter) { _, next in importFilter = next }
         .confirmationDialog("Удалить автомобиль?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Удалить", role: .destructive, action: deleteSelectedVehicle)
             Button("Отмена", role: .cancel) { vehicleToDelete = nil }
@@ -110,9 +119,9 @@ struct VehiclesView: View {
 
     private var pageHeading: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("АВТОПАРК").font(.system(size: 10, weight: .bold)).tracking(1.5).foregroundStyle(Color.euroGreen)
-            Text("Автомобили").font(.system(size: 32, weight: .bold, design: .rounded))
-            Text("Карточки, расходы и документы по каждой машине").font(.subheadline).foregroundStyle(.secondary)
+            Text(isRequestsView ? "ЗАЯВКИ НА ПРИГОН" : "АВТОПАРК").font(.system(size: 10, weight: .bold)).tracking(1.5).foregroundStyle(Color.euroGreen)
+            Text(isRequestsView ? "Заявки" : "Автомобили").font(.system(size: 32, weight: .bold, design: .rounded))
+            Text(isRequestsView ? "Запросы клиентов на подбор и доставку автомобиля" : "Карточки, расходы и документы по каждой машине").font(.subheadline).foregroundStyle(.secondary)
         }
     }
 
