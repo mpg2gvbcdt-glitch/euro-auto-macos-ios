@@ -1,6 +1,26 @@
 import Foundation
 import SwiftData
 
+struct MaintenanceRecord: Codable, Identifiable, Hashable {
+    var id: String
+    var date: String
+    var mileageKm: Int?
+    var location: String
+    var serviceType: String
+    var work: String
+    var nextServiceDate: String?
+}
+
+struct VehicleMaintenanceData: Codable, Hashable {
+    var handoverDate: String?
+    var events: [MaintenanceRecord]
+
+    init(handoverDate: String? = nil, events: [MaintenanceRecord] = []) {
+        self.handoverDate = handoverDate
+        self.events = events
+    }
+}
+
 @Model
 final class Customer {
     var id: UUID
@@ -82,6 +102,7 @@ final class Vehicle {
     var otherCosts: Double
     var salePrice: Double
     var notes: String
+    var maintenanceData: String?
     var createdAt: Date
     var updatedAt: Date
     @Relationship(deleteRule: .cascade, inverse: \VehicleDocument.vehicle)
@@ -140,6 +161,7 @@ final class Vehicle {
         self.otherCosts = 0
         self.salePrice = 0
         self.notes = ""
+        self.maintenanceData = nil
         self.createdAt = .now
         self.updatedAt = .now
     }
@@ -173,5 +195,21 @@ final class VehicleDocument {
         self.fileData = fileData
         self.createdAt = .now
         self.remoteID = nil
+    }
+}
+
+extension Vehicle {
+    var maintenance: VehicleMaintenanceData? {
+        get {
+            guard let maintenanceData, let data = maintenanceData.data(using: .utf8) else { return nil }
+            return try? JSONDecoder().decode(VehicleMaintenanceData.self, from: data)
+        }
+        set {
+            guard let newValue, let data = try? JSONEncoder().encode(newValue) else {
+                maintenanceData = nil
+                return
+            }
+            maintenanceData = String(data: data, encoding: .utf8)
+        }
     }
 }

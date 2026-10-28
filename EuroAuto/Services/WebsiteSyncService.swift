@@ -196,6 +196,8 @@ private struct NativeVehicleMetadata: Codable {
     var deliveryFxRate: Double?
     var freightCurrency: String?
     var freightFxRate: Double?
+    var handoverDate: String?
+    var maintenanceEvents: [MaintenanceRecord]?
 }
 
 private struct CustomerPayload: Encodable {
@@ -483,7 +485,9 @@ enum WebsiteSyncService {
                        importerType: car.importerType, importRoute: car.importRoute,
                        nativeMetadata: NativeVehicleMetadata(localID: car.id.uuidString, generation: car.generation, engine: car.engine,
                                                              deliveryCurrency: car.deliveryCurrency, deliveryFxRate: car.deliveryFxRate,
-                                                             freightCurrency: car.freightCurrency, freightFxRate: car.freightFxRate),
+                                                             freightCurrency: car.freightCurrency, freightFxRate: car.freightFxRate,
+                                                             handoverDate: car.maintenance?.handoverDate,
+                                                             maintenanceEvents: car.maintenance?.events),
                        expectedUpdatedAt: expectedUpdatedAt)
     }
 
@@ -503,7 +507,7 @@ enum WebsiteSyncService {
                        vehicleLengthMm: car.vehicleLengthMm, vehicleWidthMm: car.vehicleWidthMm, vehicleHeightMm: car.vehicleHeightMm,
                        wheelbaseMm: car.wheelbaseMm, curbWeightKg: car.curbWeightKg, specSource: car.specSource,
                        importerType: car.importerType, importRoute: car.importRoute,
-                       nativeMetadata: car.nativeMetadata ?? NativeVehicleMetadata(localID: nil, generation: "", engine: ""),
+                       nativeMetadata: car.nativeMetadata ?? NativeVehicleMetadata(localID: nil, generation: "", engine: "", deliveryCurrency: nil, deliveryFxRate: nil, freightCurrency: nil, freightFxRate: nil, handoverDate: nil, maintenanceEvents: nil),
                        expectedUpdatedAt: expectedUpdatedAt)
     }
 
@@ -540,6 +544,8 @@ enum WebsiteSyncService {
             local.generation = metadata.generation; local.engine = metadata.engine
             local.deliveryCurrency = metadata.deliveryCurrency; local.deliveryFxRate = metadata.deliveryFxRate
             local.freightCurrency = metadata.freightCurrency; local.freightFxRate = metadata.freightFxRate
+            let data = VehicleMaintenanceData(handoverDate: metadata.handoverDate, events: metadata.maintenanceEvents ?? [])
+            local.maintenanceData = (try? JSONEncoder().encode(data)).flatMap { String(data: $0, encoding: .utf8) }
         }
         local.createdAt = parseDate(remote.createdAt) ?? local.createdAt
         local.updatedAt = parseDate(remote.updatedAt) ?? .now

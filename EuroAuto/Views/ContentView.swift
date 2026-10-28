@@ -4,9 +4,9 @@ import SwiftData
 enum AppSection: String, CaseIterable, Identifiable {
     case overview = "Обзор"
     case vehicles = "Автомобили"
-    case requests = "Заявки"
     case currency = "Конвертер валют"
     case customers = "Заказчики"
+    case maintenance = "График ТО"
     case backup = "Перенос данных"
     case sync = "Синхронизация"
     case calcus = "Настройки Calcus"
@@ -17,9 +17,9 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .overview: "square.grid.2x2.fill"
         case .vehicles: "car.side.fill"
-        case .requests: "doc.text.magnifyingglass"
         case .currency: "dollarsign.arrow.circlepath"
         case .customers: "person.2.fill"
+        case .maintenance: "wrench.and.screwdriver.fill"
         case .backup: "externaldrive.fill"
         case .sync: "arrow.triangle.2.circlepath.icloud"
         case .calcus: "function"
@@ -52,7 +52,7 @@ struct ContentView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 18)
 
-                ForEach([AppSection.overview, .vehicles, .requests, .currency, .customers]) { section in
+                ForEach([AppSection.overview, .vehicles, .currency, .customers, .maintenance]) { section in
                     SidebarButton(section: section, selection: $selection)
                 }
 
@@ -83,12 +83,12 @@ struct ContentView: View {
                         })
                     case .vehicles:
                         VehiclesView(showingNewVehicle: $showingNewVehicle)
-                    case .requests:
-                        VehiclesView(showingNewVehicle: $showingNewVehicle, initialFilter: "Заявка на пригон авто")
                     case .currency:
                         CurrencyConverterView()
                     case .customers:
                         CustomersView()
+                    case .maintenance:
+                        MaintenanceView()
                     case .backup:
                         BackupView()
                     case .sync:

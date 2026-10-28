@@ -70,6 +70,7 @@ struct BackupVehicle: Codable {
     var importerType: String
     var importRoute: String
     var notes: String
+    var maintenanceData: String? = nil
     var createdAt: String
     var updatedAt: String
     var documents: [BackupDocument]
@@ -130,7 +131,7 @@ enum PortableBackupService {
                     clientContract: vehicle.clientContract, salePrice: vehicle.salePrice, prepayment: vehicle.prepayment,
                     orderStatus: vehicle.orderStatus, actualSalePrice: vehicle.actualSalePrice, vehicleStatus: vehicle.vehicleStatus,
                     location: vehicle.location, documentsStatus: vehicle.documentsStatus, importerType: vehicle.importerType,
-                    importRoute: vehicle.importRoute, notes: vehicle.notes, createdAt: timestamp(vehicle.createdAt),
+                    importRoute: vehicle.importRoute, notes: vehicle.notes, maintenanceData: vehicle.maintenanceData, createdAt: timestamp(vehicle.createdAt),
                     updatedAt: timestamp(vehicle.updatedAt), documents: (vehicle.documents ?? []).map {
                         BackupDocument(filename: $0.filename, contentType: $0.contentType,
                                        createdAt: timestamp($0.createdAt), dataBase64: $0.fileData.base64EncodedString())
@@ -207,7 +208,7 @@ enum PortableBackupService {
             vehicle.orderDate = parseDay(item.orderDate); vehicle.clientContract = item.clientContract; vehicle.salePrice = item.salePrice
             vehicle.prepayment = item.prepayment; vehicle.orderStatus = item.orderStatus; vehicle.actualSalePrice = item.actualSalePrice
             vehicle.vehicleStatus = item.vehicleStatus; vehicle.location = item.location; vehicle.documentsStatus = item.documentsStatus
-            vehicle.importerType = item.importerType; vehicle.importRoute = item.importRoute; vehicle.notes = item.notes
+            vehicle.importerType = item.importerType; vehicle.importRoute = item.importRoute; vehicle.notes = item.notes; vehicle.maintenanceData = item.maintenanceData
             vehicle.createdAt = parseTimestamp(item.createdAt) ?? vehicle.createdAt
             vehicle.updatedAt = parseTimestamp(item.updatedAt) ?? .now
             if existing == nil {
