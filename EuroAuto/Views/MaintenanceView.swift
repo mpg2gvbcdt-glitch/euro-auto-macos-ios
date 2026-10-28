@@ -40,6 +40,7 @@ struct MaintenanceView: View {
 
 private struct MaintenanceVehicleCard: View {
     @Bindable var vehicle: Vehicle
+    @Environment(\.modelContext) private var modelContext
     @State private var handoverDate = Date()
     @State private var hasHandoverDate = false
     @State private var serviceDate = Date()
@@ -145,7 +146,7 @@ private struct MaintenanceVehicleCard: View {
         var data = maintenance
         data.handoverDate = handoverDate
         vehicle.maintenance = data
-        vehicle.updatedAt = .now
+        markChanged()
     }
 
     private func addService() {
@@ -157,7 +158,7 @@ private struct MaintenanceVehicleCard: View {
         var data = maintenance
         data.events.append(event)
         vehicle.maintenance = data
-        vehicle.updatedAt = .now
+        markChanged()
         mileage = ""; location = ""; work = ""; hasNextServiceDate = false
     }
 
@@ -165,7 +166,12 @@ private struct MaintenanceVehicleCard: View {
         var data = maintenance
         data.events.removeAll { $0.id == record.id }
         vehicle.maintenance = data
+        markChanged()
+    }
+
+    private func markChanged() {
         vehicle.updatedAt = .now
+        WebsiteAutoSync.schedule(context: modelContext)
     }
 
     private static func day(_ date: Date) -> String { date.formatted(.iso8601.year().month().day().dateSeparator(.dash)) }
