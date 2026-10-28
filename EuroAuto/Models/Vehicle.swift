@@ -8,7 +8,20 @@ struct MaintenanceRecord: Codable, Identifiable, Hashable {
     var location: String
     var serviceType: String
     var work: String
+    var checklistItems: [String]?
     var nextServiceDate: String?
+
+    init(id: String, date: String, mileageKm: Int?, location: String, serviceType: String,
+         work: String, checklistItems: [String]? = nil, nextServiceDate: String?) {
+        self.id = id
+        self.date = date
+        self.mileageKm = mileageKm
+        self.location = location
+        self.serviceType = serviceType
+        self.work = work
+        self.checklistItems = checklistItems
+        self.nextServiceDate = nextServiceDate
+    }
 }
 
 struct VehicleMaintenanceData: Codable, Hashable {

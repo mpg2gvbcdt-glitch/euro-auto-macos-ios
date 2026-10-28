@@ -1,6 +1,21 @@
 import SwiftData
 import SwiftUI
 
+private struct MaintenanceTaskGroup: Identifiable {
+    var title: String
+    var tasks: [String]
+    var id: String { title }
+}
+
+private enum MaintenanceChecklistCatalog {
+    static let groups = [
+        MaintenanceTaskGroup(title: "Двигатель", tasks: ["Замена масла в ДВС", "Замена масляного фильтра", "Замена воздушного фильтра", "Замена салонного фильтра", "Замена топливного фильтра", "Замена свечей зажигания / накаливания", "Проверка ремня ГРМ / цепи", "Замена охлаждающей жидкости"]),
+        MaintenanceTaskGroup(title: "Трансмиссия", tasks: ["Замена масла в АКПП", "Замена фильтра АКПП", "Замена масла в МКПП / редукторе", "Проверка раздаточной коробки"]),
+        MaintenanceTaskGroup(title: "Тормозная система", tasks: ["Замена передних колодок", "Замена задних колодок", "Проверка / замена тормозных дисков", "Замена тормозной жидкости"]),
+        MaintenanceTaskGroup(title: "Ходовая и другое", tasks: ["Диагностика подвески и рулевого управления", "Проверка аккумулятора", "Проверка шин и давления", "Обслуживание кондиционера", "Проверка световых приборов"])
+    ]
+}
+
 struct MaintenanceView: View {
     @Query(sort: \Vehicle.updatedAt, order: .reverse) private var vehicles: [Vehicle]
 
@@ -47,6 +62,9 @@ private struct MaintenanceVehicleCard: View {
     @State private var mileage = ""
     @State private var location = ""
     @State private var serviceType = "Плановое ТО"
+    @State private var selectedTasks = Set<String>()
+    @State private var customTasks = [String]()
+    @State private var customTask = ""
     @State private var work = ""
     @State private var nextServiceDate = Date()
     @State private var hasNextServiceDate = false
@@ -90,14 +108,47 @@ private struct MaintenanceVehicleCard: View {
             Picker("Вид работ", selection: $serviceType) {
                 ForEach(serviceTypes, id: \.self) { Text($0).tag($0) }
             }.pickerStyle(.menu)
-            TextField("Что сделали", text: $work, axis: .vertical).lineLimit(2...4)
+            Text("Отметьте выполненные работы").font(.subheadline.weight(.semibold))
+            ForEach(MaintenanceChecklistCatalog.groups) { group in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(group.title.uppercased()).font(.caption.weight(.bold)).tracking(0.7).foregroundStyle(Color.euroGreen)
+                    LazyVGrid(columns: [GridItem(.flexible())], alignment: .leading, spacing: 5) {
+                        ForEach(group.tasks, id: \.self) { task in checklistButton(task) }
+                    }
+                }
+                .padding(11)
+                .background(Color.euroCanvas.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
+            }
+            HStack(spacing: 8) {
+                TextField("Другая работа", text: $customTask)
+                Button("Добавить") {
+                    let task = customTask.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !task.isEmpty else { return }
+                    customTasks.append(task)
+                    selectedTasks.insert(task)
+                    customTask = ""
+                }
+                .disabled(customTask.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                          MaintenanceChecklistCatalog.groups.flatMap(\.tasks).contains(customTask.trimmingCharacters(in: .whitespacesAndNewlines)) ||
+                          customTasks.contains(customTask.trimmingCharacters(in: .whitespacesAndNewlines)))
+            }
+            ForEach(customTasks, id: \.self) { task in
+                HStack {
+                    checklistButton(task)
+                    Button(role: .destructive) { customTasks.removeAll { $0 == task }; selectedTasks.remove(task) } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.borderless).help("Убрать свой пункт")
+                }
+            }
+            TextField("Комментарий к визиту (необязательно)", text: $work, axis: .vertical).lineLimit(2...4)
             Toggle("Назначить следующее обслуживание", isOn: $hasNextServiceDate)
             if hasNextServiceDate { DatePicker("Следующее ТО", selection: $nextServiceDate, displayedComponents: .date) }
             HStack {
                 Spacer()
-                Button(action: addService) { Label("Сохранить обслуживание", systemImage: "plus.circle.fill") }
+                Button(action: addService) { Label("Сохранить чек-лист ТО", systemImage: "plus.circle.fill") }
                     .buttonStyle(.borderedProminent).tint(Color.euroGreen)
-                    .disabled(location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && work.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedTasks.isEmpty)
             }
 
             let records = maintenance.events.sorted { $0.date > $1.date }
@@ -115,7 +166,17 @@ private struct MaintenanceVehicleCard: View {
                             }
                             if !record.location.isEmpty { Label(record.location, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(.secondary) }
                             if let mileage = record.mileageKm { Text("Пробег: \(mileage.formatted()) км").font(.caption).foregroundStyle(.secondary) }
-                            if !record.work.isEmpty { Text(record.work).font(.callout) }
+                            if let checklistItems = record.checklistItems, !checklistItems.isEmpty {
+                                ForEach(checklistItems, id: \.self) { task in
+                                    Label(task, systemImage: "checkmark.circle.fill")
+                                        .font(.caption).foregroundStyle(Color.euroGreen)
+                                }
+                            } else if !record.work.isEmpty {
+                                Text(record.work).font(.callout)
+                            }
+                            if !record.work.isEmpty, record.checklistItems?.isEmpty == false {
+                                Text(record.work).font(.caption).foregroundStyle(.secondary)
+                            }
                             if let next = record.nextServiceDate, !next.isEmpty { Text("Следующее ТО: \(Self.pretty(next))").font(.caption.weight(.medium)).foregroundStyle(Color.euroGreen) }
                         }
                         Button(role: .destructive) { delete(record) } label: { Image(systemName: "trash") }
@@ -136,6 +197,20 @@ private struct MaintenanceVehicleCard: View {
         TextField("Пробег, км", text: $mileage).frame(maxWidth: 180).textFieldStyle(.roundedBorder)
     }
 
+    private func checklistButton(_ task: String) -> some View {
+        let isSelected = selectedTasks.contains(task)
+        return Button {
+            if isSelected { selectedTasks.remove(task) } else { selectedTasks.insert(task) }
+        } label: {
+            Label(task, systemImage: isSelected ? "checkmark.square.fill" : "square")
+                .font(.callout)
+                .foregroundStyle(isSelected ? Color.euroGreen : Color.euroInk)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     private func loadHandoverDate() {
         guard let raw = maintenance.handoverDate, let parsed = Self.parse(raw) else { return }
         handoverDate = parsed
@@ -151,15 +226,18 @@ private struct MaintenanceVehicleCard: View {
 
     private func addService() {
         let km = Int(mileage.filter(\.isNumber))
+        let order = MaintenanceChecklistCatalog.groups.flatMap(\.tasks)
+        let tasks = order.filter(selectedTasks.contains) + customTasks.filter(selectedTasks.contains)
         let event = MaintenanceRecord(id: UUID().uuidString, date: Self.day(serviceDate), mileageKm: km,
                                       location: location.trimmingCharacters(in: .whitespacesAndNewlines), serviceType: serviceType,
                                       work: work.trimmingCharacters(in: .whitespacesAndNewlines),
+                                      checklistItems: tasks,
                                       nextServiceDate: hasNextServiceDate ? Self.day(nextServiceDate) : nil)
         var data = maintenance
         data.events.append(event)
         vehicle.maintenance = data
         markChanged()
-        mileage = ""; location = ""; work = ""; hasNextServiceDate = false
+        mileage = ""; location = ""; work = ""; selectedTasks = []; customTasks = []; customTask = ""; hasNextServiceDate = false
     }
 
     private func delete(_ record: MaintenanceRecord) {
