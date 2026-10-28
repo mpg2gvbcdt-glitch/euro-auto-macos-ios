@@ -198,6 +198,38 @@ private struct NativeVehicleMetadata: Codable {
     var freightFxRate: Double?
     var handoverDate: String?
     var maintenanceEvents: [MaintenanceRecord]?
+
+    init(localID: String?, generation: String, engine: String, deliveryCurrency: String? = nil,
+         deliveryFxRate: Double? = nil, freightCurrency: String? = nil, freightFxRate: Double? = nil,
+         handoverDate: String? = nil, maintenanceEvents: [MaintenanceRecord]? = nil) {
+        self.localID = localID
+        self.generation = generation
+        self.engine = engine
+        self.deliveryCurrency = deliveryCurrency
+        self.deliveryFxRate = deliveryFxRate
+        self.freightCurrency = freightCurrency
+        self.freightFxRate = freightFxRate
+        self.handoverDate = handoverDate
+        self.maintenanceEvents = maintenanceEvents
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case localID, generation, engine, deliveryCurrency, deliveryFxRate, freightCurrency, freightFxRate
+        case handoverDate, maintenanceEvents
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        localID = try values.decodeIfPresent(String.self, forKey: .localID)
+        generation = try values.decodeIfPresent(String.self, forKey: .generation) ?? ""
+        engine = try values.decodeIfPresent(String.self, forKey: .engine) ?? ""
+        deliveryCurrency = try values.decodeIfPresent(String.self, forKey: .deliveryCurrency)
+        deliveryFxRate = try values.decodeIfPresent(Double.self, forKey: .deliveryFxRate)
+        freightCurrency = try values.decodeIfPresent(String.self, forKey: .freightCurrency)
+        freightFxRate = try values.decodeIfPresent(Double.self, forKey: .freightFxRate)
+        handoverDate = try values.decodeIfPresent(String.self, forKey: .handoverDate)
+        maintenanceEvents = try values.decodeIfPresent([MaintenanceRecord].self, forKey: .maintenanceEvents)
+    }
 }
 
 private struct CustomerPayload: Encodable {
